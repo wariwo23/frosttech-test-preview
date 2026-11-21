@@ -335,9 +335,9 @@ $("sendBankInstructions").addEventListener("click",async()=>{
 });
 $("refreshBankStatus").addEventListener("click",refreshBankStatus);
 $("generateSimulatedBankCredit").addEventListener("click",()=>{
- if(!["super_admin","finance_admin"].includes(currentAdminRole)){
+ if(!["super_admin","finance_admin","operations_admin"].includes(currentAdminRole)){
   $("bankWorkflowStatus").className="message error";
-  $("bankWorkflowStatus").textContent="Only Finance Administrator or Super Administrator can prepare this test notification.";
+  $("bankWorkflowStatus").textContent="Only an authorised Operations Administrator, Finance Administrator or Super Administrator can prepare this simulated test notification.";
   return;
  }
  const simulatedReference="SIMULATED-BANK-CREDIT-FT-DQ-2026-0000002";
