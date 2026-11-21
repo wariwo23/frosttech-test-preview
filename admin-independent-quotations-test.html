@@ -64,7 +64,9 @@ button.secondary,.link.secondary{background:#eaf2f9;color:var(--navy)}button:dis
  <div class="actions"><button type="button" id="sendBankInstructions">Send bank instructions and protected PDF</button><button type="button" class="secondary" id="refreshBankStatus">Refresh payment status</button></div>
  <div id="bankWorkflowStatus" class="message" aria-live="polite">Checking bank-transfer status…</div>
  <div id="bankConfirmationForm">
-  <h3>Confirm bank credit notification</h3>
+  <h3>Simulated bank credit notification — TEST ONLY</h3>
+  <p class="small" style="padding:12px;border:1px solid #d97706;background:#fffbeb;border-radius:8px;color:#92400e"><strong>SIMULATED — NOT A REAL BANK CREDIT.</strong> This creates a clearly labelled test notification for the isolated quotation only. It does not prove that money was received. Proceeding with confirmation will mark this development test quotation as paid and trigger the test PDF-password email.</p>
+  <div class="actions"><button type="button" class="secondary" id="generateSimulatedBankCredit">Generate simulated bank credit notification</button></div>
   <label>Bank transaction reference<input id="bankTransferReference" maxlength="120" placeholder="Enter the bank's transaction reference"></label>
   <label style="margin-top:10px">Bank-originated credit notification details<textarea id="bankNotificationDetails" maxlength="2000" placeholder="Record the bank notification details you independently received"></textarea></label>
   <div class="actions"><button type="button" id="confirmBankCredit">Confirm bank credit and email PDF password</button><button type="button" id="retryPasswordEmail" class="secondary hidden">Retry password email</button></div>
@@ -332,6 +334,29 @@ $("sendBankInstructions").addEventListener("click",async()=>{
  finally{b.disabled=false;b.textContent="Send bank instructions and protected PDF";}
 });
 $("refreshBankStatus").addEventListener("click",refreshBankStatus);
+$("generateSimulatedBankCredit").addEventListener("click",()=>{
+ if(!["super_admin","finance_admin"].includes(currentAdminRole)){
+  $("bankWorkflowStatus").className="message error";
+  $("bankWorkflowStatus").textContent="Only Finance Administrator or Super Administrator can prepare this test notification.";
+  return;
+ }
+ const simulatedReference="SIMULATED-BANK-CREDIT-FT-DQ-2026-0000002";
+ const simulatedDetails=[
+  "SIMULATED TEST NOTIFICATION — NOT A REAL BANK CREDIT",
+  "Transaction reference: "+simulatedReference,
+  "Amount: NGN 528700.00",
+  "Beneficiary: Frosttech HVAC & Refrigiration Ltd",
+  "Bank: ProvidusUnity",
+  "Account ending: 4342",
+  "Narration: FT-DQ-2026-0000002",
+  "Simulation status: TEST ONLY — NO FUNDS TRANSFERRED"
+ ].join("\\n");
+ $("bankTransferReference").value=simulatedReference;
+ $("bankNotificationDetails").value=simulatedDetails;
+ $("confirmBankCredit").textContent="Confirm simulated test credit and email PDF password";
+ $("bankWorkflowStatus").className="message";
+ $("bankWorkflowStatus").textContent="Simulated notification prepared. It is not evidence of a real payment. Review the details, then use the confirmation button only to test the isolated development workflow.";
+});
 $("confirmBankCredit").addEventListener("click",async()=>{
  const ref=$("bankTransferReference").value.trim(),details=$("bankNotificationDetails").value.trim(),b=$("confirmBankCredit");
  if(ref.length<4||details.length<8){$("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent="Enter the bank transaction reference and bank-originated credit notification details.";return;}
