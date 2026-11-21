@@ -318,7 +318,7 @@ async function refreshBankStatus(){
   const c=data.bank_confirmation;
   box.className="message "+(c?.password_email_status==="sent"?"success":"");
   box.textContent="Quotation "+data.quotation_number+" | Consultation Fee: "+money(data.consultation_fee)+" | Fee status: "+data.fee_status+" | Protected PDF email: "+data.document_email_status+(c?" | Bank reference: "+c.bank_reference+" | Confirmed: "+new Date(c.confirmed_at).toLocaleString("en-NG")+" | Password email: "+c.password_email_status:" | Awaiting bank transfer confirmation.");
-  if(c?.password_email_status==="failed"&&["super_admin","finance_admin"].includes(currentAdminRole))$("retryPasswordEmail").classList.remove("hidden");
+  if(["pending","failed"].includes(c?.password_email_status)&&["super_admin","finance_admin"].includes(currentAdminRole))$("retryPasswordEmail").classList.remove("hidden");
   else $("retryPasswordEmail").classList.add("hidden");
   if(c?.password_email_status==="sent")$("confirmBankCredit").disabled=true;
  }catch(e){box.className="message error";box.textContent=e.message||"Could not retrieve bank status.";}
