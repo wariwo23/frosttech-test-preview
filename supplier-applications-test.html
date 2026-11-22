@@ -155,7 +155,20 @@ function render(rows){
  }).join("");
  list.querySelectorAll("button[data-decision]").forEach(btn=>btn.addEventListener("click",()=>submitDecision(btn)));
 }
-function renderDecisionSummary(result){
+async function attemptSupplierDecisionEmail(notificationId){
+ try{
+  if(!notificationId)throw new Error("The saved decision did not return a notification ID. Do not create another decision; refresh and inspect the notification record.");
+  const {data,error}=await db.functions.invoke("send-supplier-decision-notification-test",{body:{notification_id:notificationId}});
+  if(error)throw error;
+  if(data?.success===true&&(data.delivery_status==="sent"||data.already_sent===true)){
+   return {ok:true,message:data.already_sent===true?"This supplier email had already been sent; no duplicate was sent.":"Brevo accepted the supplier decision email. This does not guarantee inbox delivery.",attempt_count:data.attempt_count??null};
+  }
+  throw new Error(data?.error||"The email delivery status was not confirmed.");
+ }catch(e){
+  return {ok:false,message:e?.message||"Email delivery could not be confirmed. The saved supplier decision remains in place.",attempt_count:null};
+ }
+}
+function renderDecisionSummary(result,emailResult){
  const supplier=result?.supplier||{};
  const decision=String(result?.decision||"").toLowerCase();
  const isRejected=decision==="rejected";
@@ -172,12 +185,29 @@ function renderDecisionSummary(result){
   ["Reviewed by",result?.reviewer_name||"Administrator"],
   ["Reviewer role",String(result?.reviewer_role||"").replaceAll("_"," ")],
   ["Decision date and time",fmt(result?.reviewed_at)],
-  ["Decision record ID",result?.decision_record_id]
+  ["Decision record ID",result?.decision_record_id],
+  ["Supplier email status",emailResult?.ok?"Accepted by Brevo — inbox delivery is not guaranteed":"Not confirmed — retry is available"],
+  ["Email delivery detail",emailResult?.message||"No delivery attempt has been made."]
  ];
  const summary=document.getElementById("decisionSummary");
  summary.innerHTML='<div class="record-head"><div><h2>FrostTech HVAC and Refrigeration</h2><div class="muted">Supplier Application Decision Record</div><div class="reference">Reference: '+esc(result?.reference_code||"Not returned")+'</div></div><span class="decision-banner '+(isRejected?"rejected":"")+'">'+esc(decision.toUpperCase()||"DECISION")+(result?.override?" — SUPER ADMIN OVERRIDE":"")+'</span></div><div class="details">'+fields.map(([label,value])=>'<div><strong>'+esc(label)+'</strong>'+esc(value??"—")+'</div>').join("")+'</div><div class="record-footer">Official administrator record generated from the saved supplier decision. Environment: ISOLATED TEST — NOT PRODUCTION.<br>Keep this record for filing. Use Print / Save as PDF to retain an A4 copy.</div><div class="actions no-print"><button type="button" class="primary" id="printDecisionButton">Print / Save as PDF (A4)</button></div>';
  summary.classList.remove("hidden");
  document.getElementById("printDecisionButton").addEventListener("click",()=>window.print());
+ if(!emailResult?.ok){
+  const retry=document.createElement("button");
+  retry.type="button";
+  retry.className="secondary";
+  retry.id="retrySupplierEmailButton";
+  retry.textContent="Retry supplier email";
+  retry.addEventListener("click",async()=>{
+   retry.disabled=true;
+   retry.textContent="Retrying email…";
+   const resultAfterRetry=await attemptSupplierDecisionEmail(result?.notification_id);
+   renderDecisionSummary(result,resultAfterRetry);
+   showMessage(resultAfterRetry.ok?resultAfterRetry.message:"The supplier decision remains saved, but email delivery is still not confirmed: "+resultAfterRetry.message,resultAfterRetry.ok?"success":"error");
+  });
+  summary.querySelector(".actions.no-print").appendChild(retry);
+ }
  summary.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function loadApplications(preserveMessage=false){
@@ -203,9 +233,14 @@ async function submitDecision(btn){
   const {data,error}=await db.rpc("admin_review_supplier_application",{p_supplier_id:id,p_decision:decision,p_reason:reason||null,p_override:override});
   if(error)throw error;
   if(!data||data.success!==true)throw new Error("The database did not return a confirmed supplier decision record. Refresh and verify the application before trying again.");
+  const emailResult=await attemptSupplierDecisionEmail(data.notification_id);
   await loadApplications(true);
-  renderDecisionSummary(data);
-  showMessage("Supplier application "+decision+" successfully. The complete decision record is displayed below and is ready to print.","success");
+  renderDecisionSummary(data,emailResult);
+  if(emailResult.ok){
+   showMessage("Supplier application "+decision+" successfully. "+emailResult.message+" The complete decision record is displayed below and is ready to print.","success");
+  }else{
+   showMessage("Supplier application "+decision+" was saved successfully, but the supplier email was not confirmed. The decision is not being reversed. Use the Retry supplier email button in the decision record after checking the delivery status. Details: "+emailResult.message,"error");
+  }
  }catch(e){
   actionButtons.forEach((b,i)=>{b.disabled=false;b.textContent=originalLabels[i];});
   showMessage(e.message||"The supplier decision could not be saved. Please refresh and check the application status before trying again.","error");
