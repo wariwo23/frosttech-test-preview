@@ -44,6 +44,13 @@ button:disabled{background:#94a3b8}#message{display:none;margin-top:18px;padding
 <script>
 const form=document.getElementById("registrationForm"),button=document.getElementById("registerButton"),box=document.getElementById("message");
 function showMessage(t,c){box.textContent=t;box.className=c;}
+function showVerificationView(){
+  form.hidden = true;
+  const intro = document.querySelector(".intro");
+  const heading = document.querySelector("h1");
+  if (intro) intro.hidden = true;
+  if (heading) heading.textContent = "Email Verification";
+}
 const params = new URLSearchParams(location.search);
 const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
 
@@ -55,6 +62,7 @@ async function handleVerificationCallback() {
     hashParams.get("error");
 
   if (authError) {
+    showVerificationView();
     showMessage(
       "Email verification could not be completed. Please contact the FrostTech test administrator.",
       "error"
@@ -63,6 +71,11 @@ async function handleVerificationCallback() {
   }
 
   if (params.get("verified") !== "1") return;
+
+  // The email link has returned to this page for verification only.
+  // Hide the original registration form so the applicant cannot mistake
+  // the callback screen for a request to register a second time.
+  showVerificationView();
 
   const hasAuthCallback =
     params.has("code") || hashParams.has("access_token");
