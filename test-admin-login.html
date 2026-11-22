@@ -568,7 +568,7 @@
         if (!profile || profile.is_active !== true || profile.role !== "admin") return null;
         const { data: role, error: roleError } = await db.rpc("admin_get_my_role");
         if (roleError) throw roleError;
-        return ["super_admin", "operations_admin", "finance_admin"].includes(role) ? role : null;
+        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin"].includes(role) ? role : null;
       }
 
       async function showLoginOrActiveSession() {
@@ -643,7 +643,7 @@
           const currentDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
           if (destination.origin !== window.location.origin ||
               !destination.pathname.startsWith(currentDirectory) ||
-              destination.pathname.split("/").pop() !== "admin-independent-quotations-test.html") {
+              !["admin-independent-quotations-test.html", "supplier-applications-test.html"].includes(destination.pathname.split("/").pop())) {
             return "admin-independent-quotations-test.html";
           }
           return destination.href;
@@ -756,7 +756,7 @@
             if (!authorisedRole) {
               await db.auth.signOut({ scope: "local" });
               showMessage(
-                "This account is not authorised for the test quotation administration workspace. Use an active Super Administrator, Operations Administrator, or Finance Administrator account.",
+                "This account is not authorised for the test administration workspace. Use an active authorised administrator account.",
                 "error"
               );
               return;
