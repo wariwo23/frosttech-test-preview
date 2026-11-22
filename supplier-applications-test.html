@@ -36,9 +36,9 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 .decision-summary .decision-banner.rejected{background:#fee2e2;color:#991b1b}
 .decision-summary .record-footer{border-top:1px solid #dbe3ec;margin-top:18px;padding-top:12px;font-size:12px;color:#64748b}
 .historical-card{border:1px solid #cbd5e1;border-left:5px solid #64748b;border-radius:9px;padding:16px;margin-top:14px;break-inside:avoid;page-break-inside:avoid}.historical-card h3{margin:0 0 8px}.historical-label{display:inline-block;padding:6px 9px;border-radius:5px;background:#e2e8f0;color:#334155;font-size:12px;font-weight:bold}.historical-card .details{margin-bottom:8px}.historical-evidence{font-size:12px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:10px;margin-top:12px;overflow-wrap:anywhere}
-@page{size:A4;margin:15mm}
+@page{size:A4;margin:12mm}
 @media print{
- body{background:#fff;color:#111}
+ body{background:#fff!important;color:#111!important;margin:0!important}
  body *{visibility:hidden!important}
  #decisionSummary,#decisionSummary *{visibility:visible!important}
  #decisionSummary{display:block!important;position:absolute;left:0;top:0;width:100%;margin:0;padding:0;border:0;box-shadow:none}
@@ -47,14 +47,18 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
  #decisionSummary .decision-banner{border:1px solid #555}
  #decisionSummary .details{grid-template-columns:repeat(2,minmax(0,1fr))}
  #decisionSummary .record-footer{border-color:#777}
- body.print-historical *{visibility:hidden!important}
+ body.print-historical>header,
+ body.print-historical>main>*:not(#historicalDecisions),
+ body.print-historical #historicalDecisions>*:not(.historical-card.print-target){display:none!important}
+ body.print-historical>main{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+ body.print-historical #historicalDecisions{display:block!important;position:static!important;width:100%!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
  body.print-historical #decisionSummary,
  body.print-historical #decisionSummary *{display:none!important;visibility:hidden!important}
  body.print-historical .historical-card:not(.print-target),
  body.print-historical .historical-card:not(.print-target) *{display:none!important;visibility:hidden!important}
  body.print-historical .historical-card.print-target,
- body.print-historical .historical-card.print-target *{display:block!important;visibility:visible!important}
- body.print-historical .historical-card.print-target{position:absolute;left:0;top:0;width:100%;margin:0;padding:8mm;border:1px solid #777;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+ body.print-historical .historical-card.print-target *{visibility:visible!important}
+ body.print-historical .historical-card.print-target{display:block!important;position:static!important;width:100%!important;max-width:none!important;margin:0!important;padding:7mm!important;border:1px solid #777!important;box-shadow:none!important;break-inside:avoid!important;page-break-inside:avoid!important}
  body.print-historical .historical-card.print-target .top{display:flex!important}
  body.print-historical .historical-card.print-target .details{display:grid!important}
  body.print-historical .historical-card.print-target .no-print{display:none!important}
