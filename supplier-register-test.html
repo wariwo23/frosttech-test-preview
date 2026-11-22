@@ -63,8 +63,27 @@ async function handleVerificationCallback() {
 
   if (authError) {
     showVerificationView();
+
+    // A confirmation link can be opened again after it has already been used.
+    // Check the current browser session before showing a verification failure.
+    if (window.supabaseClient) {
+      try {
+        const { data, error } = await window.supabaseClient.auth.getUser();
+
+        if (!error && data.user && data.user.email_confirmed_at) {
+          showMessage(
+            "Your email address has already been verified successfully. Your supplier account remains inactive until administrator approval.",
+            "success"
+          );
+          return;
+        }
+      } catch (checkError) {
+        console.error("Existing supplier verification status check failed:", checkError);
+      }
+    }
+
     showMessage(
-      "Email verification could not be completed. Please contact the FrostTech test administrator.",
+      "This email confirmation link could not be used. It may have expired or already been used. If you have already verified your email, do not register again; contact the FrostTech test administrator to check your existing application.",
       "error"
     );
     return;
