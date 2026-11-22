@@ -55,7 +55,17 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <main>
 <section class="panel top"><div><strong id="adminRole">Checking administrator access…</strong><div class="meta" id="adminEmail"></div></div><div class="actions" style="margin:0"><button class="secondary" id="refreshButton">Refresh</button><button class="secondary" id="signOutButton">Sign Out</button></div></section>
 <div id="message" role="status" aria-live="polite"></div>
-<section id="decisionSummary" class="panel decision-summary hidden" aria-live="polite"></section>
+<section id="decisionSummary" class="panel decision-summary" aria-live="polite">
+<div class="record-head">
+ <div><h2>FrostTech HVAC and Refrigeration</h2><div class="muted">Supplier Application Decision Record</div></div>
+ <span class="status">AWAITING A DECISION</span>
+</div>
+<div class="empty-state">
+ <p><strong>No new supplier decision has been recorded in this session.</strong></p>
+ <p class="muted">This section will display the complete supplier details, decision, reason, reviewer, date, and permanent reference after an authorised approval or rejection is saved.</p>
+ <p class="muted">No supplier application has been changed. Existing decision records remain unchanged.</p>
+</div>
+</section>
 <div id="emailTestPanel" class="panel" aria-live="polite">
 <h2 style="margin:0 0 6px">Brevo email delivery test</h2>
 <p class="muted">Super Administrator diagnostic only. Sends a clearly labelled test email to your signed-in administrator email. It does not change any supplier application or decision.</p>
