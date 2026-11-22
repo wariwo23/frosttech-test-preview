@@ -36,6 +36,11 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <main>
 <section class="panel top"><div><strong id="adminRole">Checking administrator access…</strong><div class="meta" id="adminEmail"></div></div><div class="actions" style="margin:0"><button class="secondary" id="refreshButton">Refresh</button><button class="secondary" id="signOutButton">Sign Out</button></div></section>
 <div id="message" role="status" aria-live="polite"></div>
+<div id="emailTestPanel" class="panel hidden">
+<h2 style="margin:0 0 6px">Brevo email delivery test</h2>
+<p class="muted">Super Administrator diagnostic only. Sends a clearly labelled test email to your signed-in administrator email. It does not change any supplier application or decision.</p>
+<button class="primary" id="sendEmailTestButton" type="button">Send test email to my admin inbox</button>
+</div>
 <section class="panel">
 <div class="top"><div><h2 style="margin:0 0 5px">Supplier applications</h2><div class="muted">Supplier Administrators can review pending applications. Super Administrators retain oversight and may override a previous decision with a recorded reason.</div></div>
 <div class="filters"><label for="statusFilter">Show</label><select id="statusFilter"><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="all">All applications</option></select></div></div>
@@ -107,6 +112,18 @@ async function submitDecision(btn){
   decisionInProgress=false;
  }
 }
+document.getElementById("sendEmailTestButton").addEventListener("click",async()=>{
+ const button=document.getElementById("sendEmailTestButton");
+ if(currentRole!=="super_admin"){showMessage("Only the Super Administrator can run this diagnostic.","error");return}
+ button.disabled=true;button.textContent="Sending test email…";
+ try{
+  const {data,error}=await db.functions.invoke("send-supplier-decision-notification-test",{body:{test_mode:true}});
+  if(error)throw error;
+  if(!data||data.success!==true)throw new Error(data?.error||"The test email was not accepted.");
+  showMessage("Brevo accepted the diagnostic email for "+data.recipient+". Check that inbox, including Spam/Junk. No supplier application was changed. Provider message ID: "+(data.provider_message_id||"not returned"),"success");
+ }catch(e){showMessage(e.message||"The Brevo diagnostic could not be completed. Check the Edge Function logs before retrying.","error")}
+ finally{button.disabled=false;button.textContent="Send test email to my admin inbox"}
+});
 document.getElementById("refreshButton").addEventListener("click",loadApplications);
 filter.addEventListener("change",loadApplications);
 document.getElementById("signOutButton").addEventListener("click",async()=>{
@@ -122,6 +139,7 @@ async function init(){
   currentRole=await verifyAdmin(data.session.user);
   if(!currentRole){await db.auth.signOut({scope:"local"});location.href="test-admin-login.html?return="+encodeURIComponent("supplier-applications-test.html");return}
   document.getElementById("adminRole").textContent=currentRole.replaceAll("_"," ").toUpperCase();
+  if(currentRole==="super_admin")document.getElementById("emailTestPanel").classList.remove("hidden");
   document.getElementById("adminEmail").textContent=data.session.user.email||"";
   await loadApplications();
  }catch(e){showMessage(e.message||"Administrator access could not be verified.","error")}
