@@ -44,8 +44,82 @@ button:disabled{background:#94a3b8}#message{display:none;margin-top:18px;padding
 <script>
 const form=document.getElementById("registrationForm"),button=document.getElementById("registerButton"),box=document.getElementById("message");
 function showMessage(t,c){box.textContent=t;box.className=c;}
-const params=new URLSearchParams(location.search);
-if(params.get("verified")==="1"){showMessage("Your email verification link has been processed. Your supplier account remains inactive until administrator approval.","success");}
+const params = new URLSearchParams(location.search);
+const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+
+async function handleVerificationCallback() {
+  const authError =
+    params.get("error_description") ||
+    params.get("error") ||
+    hashParams.get("error_description") ||
+    hashParams.get("error");
+
+  if (authError) {
+    showMessage(
+      "Email verification could not be completed. Please contact the FrostTech test administrator.",
+      "error"
+    );
+    return;
+  }
+
+  if (params.get("verified") !== "1") return;
+
+  const hasAuthCallback =
+    params.has("code") || hashParams.has("access_token");
+
+  if (!hasAuthCallback) {
+    showMessage(
+      "You have returned to the supplier registration page, but email verification could not yet be confirmed. Please contact the FrostTech test administrator.",
+      "info"
+    );
+    return;
+  }
+
+  if (!window.supabaseClient) {
+    showMessage(
+      "The verification service could not load. Please refresh the page.",
+      "error"
+    );
+    return;
+  }
+
+  showMessage("Checking your email verification...", "info");
+
+  try {
+    const { data, error } =
+      await window.supabaseClient.auth.getUser();
+
+    if (error || !data.user) {
+      showMessage(
+        "Your verification callback was received, but your verified account could not be confirmed. Please contact the FrostTech test administrator.",
+        "error"
+      );
+      return;
+    }
+
+    if (!data.user.email_confirmed_at) {
+      showMessage(
+        "Your email address is not yet confirmed. Please contact the FrostTech test administrator.",
+        "info"
+      );
+      return;
+    }
+
+    showMessage(
+      "Your email address has been verified successfully. Your supplier account remains inactive until administrator approval.",
+      "success"
+    );
+  } catch (error) {
+    console.error("Supplier email verification check failed:", error);
+
+    showMessage(
+      "We could not confirm your verification status. Please refresh the page or contact the FrostTech test administrator.",
+      "error"
+    );
+  }
+}
+
+handleVerificationCallback();
 form.addEventListener("submit",async e=>{
  e.preventDefault();box.className="";box.textContent="";
  const password=document.getElementById("password").value,confirm=document.getElementById("confirm_password").value;
