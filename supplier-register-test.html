@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supplier Registration | FrostTech TEST</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:18px 12px;font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+.container{max-width:540px;margin:18px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+.brand{text-align:center;color:#075985;font-size:25px;font-weight:bold} .env{text-align:center;color:#92400e;background:#fef3c7;border-radius:5px;padding:7px;margin:10px 0 18px;font-size:12px;font-weight:bold}
+h1{text-align:center;font-size:23px;margin:8px 0}.intro{text-align:center;color:#64748b;line-height:1.55;font-size:14px;margin-bottom:20px}
+label{display:block;margin:14px 0 6px;font-weight:bold;font-size:14px}input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:6px;font-size:16px}
+input:focus{outline:2px solid #0284c7;border-color:#0284c7}button{width:100%;padding:14px;margin-top:22px;border:0;border-radius:6px;background:#0369a1;color:white;font-size:16px;font-weight:bold}
+button:disabled{background:#94a3b8}#message{display:none;margin-top:18px;padding:13px;border-radius:6px;line-height:1.55;font-size:14px;overflow-wrap:anywhere}
+.success{display:block!important;background:#dcfce7;color:#166534}.error{display:block!important;background:#fee2e2;color:#991b1b}.info{display:block!important;background:#e0f2fe;color:#075985}
+.links{text-align:center;margin-top:20px;font-size:14px;line-height:2}a{color:#0369a1;text-decoration:none}
+.small{color:#64748b;font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<main class="container">
+<div class="brand">FrostTech</div>
+<div class="env">ISOLATED TEST ENVIRONMENT — NOT PRODUCTION</div>
+<h1>Supplier Registration</h1>
+<p class="intro">Register a supplier account for FrostTech testing. Every application remains inactive, unverified and pending review until an authorised administrator approves it.</p>
+<form id="registrationForm">
+<label for="business_name">Business Name *</label><input id="business_name" autocomplete="organization" required>
+<label for="contact_name">Contact Person *</label><input id="contact_name" autocomplete="name" required>
+<label for="email">Business Email *</label><input id="email" type="email" autocomplete="email" required>
+<label for="phone">Phone Number *</label><input id="phone" type="tel" autocomplete="tel" required>
+<label for="address">Business Address *</label><input id="address" autocomplete="street-address" required>
+<label for="city">City *</label><input id="city" autocomplete="address-level2" required>
+<label for="state">State *</label><input id="state" autocomplete="address-level1" required>
+<label for="password">Password *</label><input id="password" type="password" minlength="8" autocomplete="new-password" required>
+<div class="small">Use at least 8 characters.</div>
+<label for="confirm_password">Confirm Password *</label><input id="confirm_password" type="password" minlength="8" autocomplete="new-password" required>
+<button id="registerButton" type="submit">Register Test Supplier</button>
+</form>
+<div id="message" role="status" aria-live="polite"></div>
+<div class="links"><a href="test-admin-login.html">Return to Test Administrator Sign In</a></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-test.js"></script>
+<script>
+const form=document.getElementById("registrationForm"),button=document.getElementById("registerButton"),box=document.getElementById("message");
+function showMessage(t,c){box.textContent=t;box.className=c;}
+const params=new URLSearchParams(location.search);
+if(params.get("verified")==="1"){showMessage("Your email verification link has been processed. Your supplier account remains inactive until administrator approval.","success");}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();box.className="";box.textContent="";
+ const password=document.getElementById("password").value,confirm=document.getElementById("confirm_password").value;
+ if(password.length<8){showMessage("Your password must contain at least 8 characters.","error");return;}
+ if(password!==confirm){showMessage("The passwords do not match.","error");return;}
+ if(!window.supabaseClient){showMessage("The test database client did not load. Please refresh and try again.","error");return;}
+ const body={business_name:document.getElementById("business_name").value.trim(),contact_name:document.getElementById("contact_name").value.trim(),email:document.getElementById("email").value.trim().toLowerCase(),phone:document.getElementById("phone").value.trim(),address:document.getElementById("address").value.trim(),city:document.getElementById("city").value.trim(),state:document.getElementById("state").value.trim(),password};
+ button.disabled=true;button.textContent="Submitting...";showMessage("Submitting your test supplier registration. Please wait.","info");
+ try{
+  const {data,error}=await window.supabaseClient.functions.invoke("register-supplier-test",{body});
+  if(error){let detail="";try{detail=(await error.context.json()).error||"";}catch(_){}showMessage(detail||"Registration could not be completed. Please try again or contact the test administrator.","error");return;}
+  if(!data||data.success!==true){showMessage(data?.error||"Registration could not be completed.","error");return;}
+  form.reset();showMessage(data.message||"Registration submitted. Await email verification and administrator approval.", "success");
+ }catch(err){console.error("Test supplier registration error:",err);showMessage("Could not reach the test registration service. Check your connection and try again.","error");}
+ finally{button.disabled=false;button.textContent="Register Test Supplier";}
+});
+</script>
+</body>
+</html>
