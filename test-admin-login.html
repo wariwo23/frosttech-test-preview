@@ -635,9 +635,10 @@
         }
       }
 
-      function getReturnUrl() {
+      function getReturnUrl(role) {
         const params = new URLSearchParams(window.location.search);
-        const requested = params.get("return") || "admin-independent-quotations-test.html";
+        const defaultDestination = role === "supplier_admin" ? "supplier-applications-test.html" : "admin-independent-quotations-test.html";
+        const requested = params.get("return") || defaultDestination;
         try {
           const destination = new URL(requested, window.location.href);
           const currentDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
@@ -764,7 +765,7 @@
 
             showMessage("Administrator access verified (" + authorisedRole.replaceAll("_", " ") + "). Opening the test workspace...", "success");
 
-            window.location.href = getReturnUrl();
+            window.location.href = getReturnUrl(authorisedRole);
           } catch (error) {
             showMessage(
               error.message || "Login failed. Check your email and password.",
@@ -996,7 +997,7 @@
                 return;
             }
 
-            window.location.replace(getReturnUrl());
+            window.location.replace(getReturnUrl(authorisedRole));
             return;
         } catch (error) {
             showSection(loginSection);
