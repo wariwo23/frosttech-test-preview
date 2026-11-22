@@ -47,11 +47,11 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
  #decisionSummary .decision-banner{border:1px solid #555}
  #decisionSummary .details{grid-template-columns:repeat(2,minmax(0,1fr))}
  #decisionSummary .record-footer{border-color:#777}
- body.print-historical #decisionSummary{visibility:hidden!important;display:none!important}
- body.print-historical #historicalDecisions,body.print-historical #historicalDecisions *{visibility:visible!important}
- body.print-historical #historicalDecisions{display:block!important;position:absolute;left:0;top:0;width:100%;margin:0;padding:0;border:0;box-shadow:none}
- body.print-historical #historicalDecisions .no-print{display:none!important}
- body.print-historical .historical-card{border:1px solid #777;margin:0 0 12mm;padding:8mm;break-inside:avoid;page-break-inside:avoid}
+ body.print-historical *{visibility:hidden!important}
+ body.print-historical .historical-card.print-target,
+ body.print-historical .historical-card.print-target *{visibility:visible!important}
+ body.print-historical .historical-card.print-target{display:block!important;position:absolute;left:0;top:0;width:100%;margin:0;padding:8mm;border:1px solid #777;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+ body.print-historical .historical-card.print-target .no-print{display:none!important}
 }
 @media(max-width:560px){main{width:calc(100% - 18px);margin-top:12px}.panel{padding:14px}.details{grid-template-columns:1fr}.filters select{width:100%}.filters{align-items:stretch}.top{align-items:stretch}.top button{width:100%}}
 </style>
@@ -62,8 +62,8 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <section class="panel top"><div><strong id="adminRole">Checking administrator access…</strong><div class="meta" id="adminEmail"></div></div><div class="actions" style="margin:0"><button class="secondary" id="refreshButton">Refresh</button><button class="secondary" id="signOutButton">Sign Out</button></div></section>
 <div id="message" role="status" aria-live="polite"></div>
 <section id="historicalDecisions" class="panel" aria-live="polite">
-<div class="top"><div><h2 style="margin:0 0 5px">Recovered Historical Decisions</h2><div class="muted">Two earlier approvals recovered from the isolated test environment audit log. These are historical evidence summaries, not newly created permanent decision records.</div></div><button type="button" class="secondary no-print" id="printHistoricalButton">Print / Save Historical Records (A4)</button></div>
-<article class="historical-card">
+<div class="top"><div><h2 style="margin:0 0 5px">Recovered Historical Decisions</h2><div class="muted">Two earlier approvals recovered from the isolated test environment audit log. Each supplier record can be printed separately for individual filing.</div></div></div>
+<article id="historicalRecord001" class="historical-card">
 <div class="top"><div><h3>Frosttech test supplier 5</h3><div class="muted">Recovered Historical Approval Record 001</div></div><span class="historical-label">APPROVED — HISTORICAL</span></div>
 <div class="details">
 <div><strong>Contact person</strong>Blessing</div><div><strong>Business email</strong>unajite@gmail.com</div>
@@ -73,8 +73,9 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <div><strong>Decision reason</strong>Not recorded in the recovered audit entry</div>
 </div>
 <div class="historical-evidence">Evidence source: isolated test environment admin activity log, entry #7. The audit entry and supplier reviewed_at timestamp agree. No permanent decision reference code was present in the source.</div>
+<div class="actions no-print"><button type="button" class="primary" data-print-historical="historicalRecord001">Print / Save this supplier record (A4)</button></div>
 </article>
-<article class="historical-card">
+<article id="historicalRecord002" class="historical-card">
 <div class="top"><div><h3>Frosttech test supplier 3</h3><div class="muted">Recovered Historical Approval Record 002</div></div><span class="historical-label">APPROVED — HISTORICAL</span></div>
 <div class="details">
 <div><strong>Contact person</strong>Bond</div><div><strong>Business email</strong>omonode.dele+redirecttest@gmail.com</div>
@@ -84,6 +85,7 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <div><strong>Decision reason</strong>Not recorded in the recovered audit entry</div>
 </div>
 <div class="historical-evidence">Evidence source: isolated test environment admin activity log, entry #8. The audit entry and supplier reviewed_at timestamp agree. No permanent decision reference code was present in the source.</div>
+<div class="actions no-print"><button type="button" class="primary" data-print-historical="historicalRecord002">Print / Save this supplier record (A4)</button></div>
 </article>
 <p class="muted">These recovered summaries do not create or alter supplier records, do not send emails, and do not claim to be new permanent decision records.</p>
 </section>
@@ -213,13 +215,20 @@ document.getElementById("sendEmailTestButton").addEventListener("click",async()=
  }catch(e){showMessage(e.message||"The Brevo diagnostic could not be completed. Check the Edge Function logs before retrying.","error")}
  finally{button.disabled=false;button.textContent="Send test email to my admin inbox"}
 });
-document.getElementById("printHistoricalButton").addEventListener("click",()=>{
+document.querySelectorAll("[data-print-historical]").forEach(button=>button.addEventListener("click",()=>{
+ const record=document.getElementById(button.dataset.printHistorical);
+ if(!record)return;
+ document.querySelectorAll(".historical-card").forEach(card=>card.classList.remove("print-target"));
+ record.classList.add("print-target");
  document.body.classList.add("print-historical");
- const cleanup=()=>document.body.classList.remove("print-historical");
+ const cleanup=()=>{
+  document.body.classList.remove("print-historical");
+  record.classList.remove("print-target");
+ };
  window.addEventListener("afterprint",cleanup,{once:true});
  window.print();
- setTimeout(cleanup,1500);
-});
+ setTimeout(cleanup,2000);
+}));
 document.getElementById("refreshButton").addEventListener("click",loadApplications);
 filter.addEventListener("change",loadApplications);
 document.getElementById("signOutButton").addEventListener("click",async()=>{
