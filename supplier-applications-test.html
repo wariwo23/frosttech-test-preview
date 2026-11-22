@@ -76,24 +76,36 @@ function render(rows){
  }).join("");
  list.querySelectorAll("button[data-decision]").forEach(btn=>btn.addEventListener("click",()=>submitDecision(btn)));
 }
-async function loadApplications(){
- clearMessage();list.innerHTML='<p class="muted">Loading applications…</p>';
+async function loadApplications(preserveMessage=false){
+ if(!preserveMessage)clearMessage();list.innerHTML='<p class="muted">Loading applications…</p>';
  const {data,error}=await db.rpc("admin_list_supplier_applications",{p_status:filter.value});
  if(error){list.innerHTML="";showMessage(error.message||"Applications could not be loaded.","error");return}
  render(data||[]);
 }
+let decisionInProgress=false;
 async function submitDecision(btn){
+ if(decisionInProgress)return;
  const id=btn.dataset.id,decision=btn.dataset.decision,override=btn.dataset.override==="true";
  const reasonEl=document.getElementById("reason-"+id);
  const reason=reasonEl?reasonEl.value.trim():"";
  if(decision==="rejected"&&reason.length<5){showMessage("Please enter a rejection reason of at least 5 characters.","error");return}
  if(override&&reason.length<5){showMessage("A Super Administrator override requires a reason of at least 5 characters.","error");return}
- const label=btn.textContent;btn.disabled=true;btn.textContent="Saving…";
- const {data,error}=await db.rpc("admin_review_supplier_application",{p_supplier_id:id,p_decision:decision,p_reason:reason||null,p_override:override});
- btn.disabled=false;btn.textContent=label;
- if(error){showMessage(error.message||"The supplier decision could not be saved.","error");return}
- showMessage("Supplier application "+decision+" successfully. The decision has been recorded in the administrator audit log.","success");
- await loadApplications();
+ decisionInProgress=true;
+ const actionButtons=[...list.querySelectorAll("button[data-decision]")];
+ const originalLabels=actionButtons.map(b=>b.textContent);
+ actionButtons.forEach(b=>{b.disabled=true;});
+ btn.textContent="Saving…";
+ try{
+  const {error}=await db.rpc("admin_review_supplier_application",{p_supplier_id:id,p_decision:decision,p_reason:reason||null,p_override:override});
+  if(error)throw error;
+  await loadApplications(true);
+  showMessage("Supplier application "+decision+" successfully. The decision has been recorded in the administrator audit log.","success");
+ }catch(e){
+  actionButtons.forEach((b,i)=>{b.disabled=false;b.textContent=originalLabels[i];});
+  showMessage(e.message||"The supplier decision could not be saved. Please refresh and check the application status before trying again.","error");
+ }finally{
+  decisionInProgress=false;
+ }
 }
 document.getElementById("refreshButton").addEventListener("click",loadApplications);
 filter.addEventListener("change",loadApplications);
