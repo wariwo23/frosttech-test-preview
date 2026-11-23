@@ -345,3 +345,36 @@ This is a metadata and static-source reconciliation, not a runtime test against 
 The package remains eligible for the already-authorised isolated-test application only after the final SQL package is fetched once more and the exact target preflight is confirmed. Apply to project `gqnidjifiobhqhnxjlow` only. Do not apply to production. If either migration fails, stop immediately and inspect the failure; do not improvise a production change or bypass a preflight.
 
 No migration has been applied in this reconciliation pass. Production remains unchanged.
+
+
+## Isolated-test migration application and metadata verification — 23 November 2026
+
+The previously authorised two-migration package was applied to isolated test project `gqnidjifiobhqhnxjlow`, in dependency order.
+
+### Application record
+
+1. `command_center_operations_workspace_draft` — applied successfully.
+2. `command_center_quotation_integrity_dependencies_draft` — first attempt stopped and rolled back because the test project did not have `public.is_admin()`. No companion objects were left behind by that failed transaction.
+3. The production `is_admin()` predicate was retrieved read-only. The companion migration was amended to provide the same active-profile/admin-role check, with an empty search_path and authenticated-only execution. The companion migration then applied successfully.
+
+The companion migration also created the isolated test `private` schema with no API-role access, as the target project did not previously have that schema. The production database was not changed.
+
+### Post-application metadata checks
+
+Read-only checks confirmed:
+
+- All nine requested Operations/dependency tables exist.
+- All ten Operations RPCs exist.
+- All 15 integrity/helper functions exist.
+- All 16 relevant integrity triggers exist and are enabled.
+- RLS is enabled on all nine tables.
+- The four Operations permission rows exist: `customer_requests.manage`, `deliveries.manage`, `orders.manage`, and `quotations.read_operational`.
+- Anonymous execution of all ten Operations RPCs is denied; authenticated execution is granted, with each function SECURITY DEFINER and an empty search_path.
+- Direct INSERT privilege on `quote_requests` is denied to anon and authenticated.
+- Direct SELECT on alternative proposals, alternative decisions and original snapshots is denied to authenticated; integrity-audit SELECT is granted but remains RLS-scoped.
+
+### What this does and does not prove
+
+The SQL migrations are now recorded in the isolated test project's migration history and their expected objects/security metadata are present. This is a successful schema deployment and metadata verification, **not yet an end-to-end functional test**. The next test stage must use the existing Super Admin and Operations Admin test accounts to verify the Command Center pages, authorised reads, denied cross-department access, and guarded delivery/request actions without creating real customer-facing records or sending notifications.
+
+No production objects, data, accounts, policies, functions or deployments were changed. No employee was created, no operator appointed, and no invitation or email was sent.
