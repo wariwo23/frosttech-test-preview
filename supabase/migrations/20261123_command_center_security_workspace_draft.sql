@@ -358,19 +358,9 @@ begin
   v_email := pg_catalog.lower(pg_catalog.btrim(p_email));
   v_department := pg_catalog.lower(pg_catalog.btrim(p_department));
 
-  if v_email !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+
--- [ ] Build and review an isolated invite-frosttech-employee Edge Function variant.
--- [ ] Verify its CORS/redirect use the isolated preview URL, not production.
--- [ ] Verify employee ID metadata markers match both service RPCs.
--- [ ] Test employee invitation, email verification, account setup and activation in isolation.
--- [ ] Confirm is_super_admin() and admin_accounts protection in test.
--- [ ] Confirm audit table is append-only and direct client mutation remains denied.
--- [ ] Confirm employee table has no direct anon/authenticated read/write policies.
--- [ ] Confirm function owners can read auth.users and protected public tables.
--- [ ] Run static SQL validation and compare RPC return column names with frontend code.
--- [ ] Apply only to isolated test project after separate explicit approval.
-
- then
+  if pg_catalog.position('@' in v_email) < 2
+     or pg_catalog.position('.' in v_email) <= pg_catalog.position('@' in v_email) + 1
+     or pg_catalog.position(' ' in v_email) > 0 then
     raise exception 'Enter a valid employee email address.';
   end if;
   if p_job_title is null or pg_catalog.btrim(p_job_title) = '' then
