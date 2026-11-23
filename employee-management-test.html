@@ -17,7 +17,7 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;
 </style></head><body>
 <header><h1>FrostTech HVAC and Refrigeration</h1><p>Employee Registration & Onboarding</p><p><a href="admin-command-center-test.html">Return to Administration Command Center</a> · <a href="department-operator-management-test.html">Department Operator Management</a></p></header>
 <main><div class="env">ISOLATED TEST ENVIRONMENT — NOT PRODUCTION</div>
-<section class="card"><h2 id="heading">Verifying Super Administrator access</h2><p id="status" class="message">Please wait…</p><p id="identity" class="hidden">Signed in as <strong id="email"></strong> · Super Administrator</p></section>
+<section class="card"><h2 id="heading">Verifying Super Administrator access</h2><p id="appointmentHold" class="message">Checking launch appointment hold…</p><p id="status" class="message">Please wait…</p><p id="identity" class="hidden">Signed in as <strong id="email"></strong> · Super Administrator</p></section>
 <div id="workspace" class="hidden">
 <section class="card"><h2>Register a FrostTech Employee</h2><p>Creating an employee record does not create an authentication account, send an invitation or grant departmental administrator access.</p>
 <form id="createForm"><div class="grid">
@@ -31,7 +31,7 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;
 </div></main>
 <div id="confirm" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><section><h2 id="confirmTitle">FrostTech HVAC and Refrigeration Marketplace</h2><p id="confirmText"></p><button id="cancel" type="button" class="secondary">Cancel</button><button id="accept" type="button">Confirm</button></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script><script>
-"use strict";const db=window.supabaseClient;const $=id=>document.getElementById(id);let employees=[],pendingAction=null;
+"use strict";const db=window.supabaseClient;const $=id=>document.getElementById(id);let employees=[],pendingAction=null,appointmentHold=true;
 function message(id,value,type=""){const el=$(id);el.textContent=value;el.className="message"+(type?" "+type:"");}
 function cell(value){const el=document.createElement("td");el.textContent=value??"";return el;}
 function ask(text,label,fn){$("confirmText").textContent=text;$("accept").textContent=label;pendingAction=fn;$("confirm").classList.remove("hidden");}
@@ -40,7 +40,7 @@ $("accept").addEventListener("click",async()=>{if(!pendingAction)return;const fn
 async function loadEmployees(){
  $("refreshButton").disabled=true;message("listMessage","Loading employee records…");$("records").replaceChildren();
  try{
-  const {data,error}=await db.rpc("admin_list_frosttech_employee_management");if(error)throw error;
+  const [{data,error},{data:holdData,error:holdError}]=await Promise.all([db.rpc("admin_list_frosttech_employee_management"),db.rpc("admin_get_appointment_hold_status")]);if(error)throw error;if(holdError)throw holdError;appointmentHold=!!(Array.isArray(holdData)&&holdData[0]?.is_on_hold);$("appointmentHold").textContent=appointmentHold?"APPOINTMENT HOLD ACTIVE — employee activation is disabled until official launch. Invitations and account setup remain separate.":"Appointment hold released by Super Administrator.";
   employees=Array.isArray(data)?data:[];
   if(!employees.length){message("listMessage","No employee records have been created yet.","success");return;}
   const table=document.createElement("table"),head=document.createElement("tr");
@@ -55,8 +55,8 @@ async function loadEmployees(){
     actions.append(invite);
     const note=document.createElement("p");note.textContent="Invitation testing is paused until the isolated email function is separately approved and deployed.";actions.append(note);
    }else if(e.employment_status==="invited"&&e.account_setup_completed_at){
-    const activate=document.createElement("button");activate.type="button";activate.textContent="Activate Employment";
-    activate.addEventListener("click",()=>ask("Activate employment for "+e.full_name+"? This does not appoint the employee as a departmental administrator.","Activate Employee",async()=>{
+    const activate=document.createElement("button");activate.type="button";activate.textContent=appointmentHold?"Employment Activation On Hold":"Activate Employment";activate.disabled=appointmentHold;
+    if(appointmentHold)activate.title="Activation remains disabled until FrostTech officially launches.";activate.addEventListener("click",()=>{if(appointmentHold)return;ask("Activate employment for "+e.full_name+"? This does not appoint the employee as a departmental administrator.","Activate Employee",async()=>{
       activate.disabled=true;const {data,error}=await db.rpc("admin_activate_frosttech_employee",{p_employee_id:e.employee_id});if(error)throw error;if(data!==true)throw new Error("Employee activation was not confirmed.");message("listMessage","Employment activated for "+e.full_name+". Departmental access remains a separate Super Administrator action.","success");await loadEmployees();
     }));actions.append(activate);
    }else if(e.employment_status==="invited"){actions.textContent="Waiting for employee account setup completion.";}
