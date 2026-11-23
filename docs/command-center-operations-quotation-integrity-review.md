@@ -59,3 +59,36 @@ Production restricts environment classification changes to trusted server-role r
 ## Safety boundary
 
 This document is a review record, not executable SQL. It does not create, alter, or delete any database object. No test data or production data was changed. No employee/admin account, invitation, payment, quotation or customer workflow was actioned.
+
+
+## Additional read-only findings
+
+### Ownership helper
+
+`frosttech_customer_owns_quote_request_v1(request_id)` verifies that:
+- The request belongs to `auth.uid()`.
+- The matching profile has role `customer`.
+- The profile is active.
+
+This helper is used by customer-facing read policies for original snapshots, alternative proposals, and alternative decisions. It is a workflow dependency and should be retained in the test mirror if those policies are recreated.
+
+### Production row-level policies
+
+The inspected production read policies are:
+- `alternative_proposals`: customer who owns the request, the proposal's submitting user, or an authorised customer-request manager.
+- `alternative_proposal_decisions`: request-owning customer or authorised customer-request manager.
+- `quote_request_original_snapshots`: request-owning customer or authorised customer-request manager.
+- `quote_request_integrity_audit`: authorised customer-request manager only.
+- `admin_quotation_items`: Super Admin manage policy; customer/manager read policy scoped through the parent quotation.
+
+These are deliberately distinct access rules. Do not replace them with a blanket authenticated policy. The Operations list RPC should expose only the fields needed by Operations and must not confer direct table access.
+
+### Cross-acceptance rule
+
+The production cross-quotation guard runs on both quotation and alternative-decision changes. It serialises acceptance on the parent customer request, rejects acceptance of a second quotation version, and rejects accepting an alternative proposal when a quotation is already accepted (and vice versa). A quotation that incorporates an accepted alternative must contain the matching proposal reference in its quotation items.
+
+### Remaining mapping before companion SQL is complete
+
+The exact production columns and constraints for the four dependency tables have been inspected. The alternative proposal table also references supplier and supplier-quote records, and the quotation item table references proposal IDs. The companion migration must therefore map the exact test prerequisites for `suppliers`, `supplier_quotes`, `alternative_proposals`, and the corresponding functions/triggers before writing executable DDL.
+
+No test-side dependency exists yet; the test project returned no matching integrity tables or helper functions in the read-only check. No production or test data was modified.
