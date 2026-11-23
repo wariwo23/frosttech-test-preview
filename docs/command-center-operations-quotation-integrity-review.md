@@ -210,3 +210,22 @@ The migration must reproduce the dependency schema and trigger graph in dependen
 The isolated test supplier table differs from production; migration preflight must stop rather than alter an existing object if its shape is unexpected. Existing draft SQL remains blocked pending companion migration and complete static review.
 
 This was a metadata/function-definition inspection only. No production data rows were read and no database writes or deployments were performed.
+
+
+## Migration static review — newly identified blockers
+
+The current Operations SQL draft was re-opened and statically inspected against the metadata gathered so far. It remains **not safe to apply**.
+
+1. **Helper creation order:** the draft creates policies on `quote_requests` that call `frosttech_can_manage_customer_requests_v1()` before the helper function is defined later in the file. PostgreSQL policy creation requires the referenced function to exist at policy creation time. The helper must be created and permission-checked before those policies.
+2. **Direct table grants:** the draft grants broad direct `SELECT, INSERT, UPDATE` to authenticated and `INSERT` to anon on `quote_requests`. This has not been demonstrated to match production table grants and is broader than the intended RPC-mediated Operations access. It must not be carried forward without an exact grant comparison and a documented need.
+3. **Quotation table privileges:** the draft grants direct `SELECT, INSERT, UPDATE, DELETE` on `admin_quotations` to authenticated, relying only on RLS to narrow access. This must be checked against production grants and existing frontend RPC dependencies; do not assume an RLS policy alone is the complete privilege boundary.
+4. **Production integrity trigger omissions:** the draft still does not create the original-request snapshot capture, original-field immutability, request deletion guard, environment-classification guard, quotation version-scope guard, cross-quotation acceptance guard, or automatic quotation-number trigger and their required dependencies.
+5. **Supplier/proposal dependency omissions:** the draft does not yet create supplier quote, alternative proposal, alternative decision, quotation item, snapshot, and integrity-audit tables with the verified constraints/indexes/triggers/policies. The production supplier-quote pricing trigger and alternative-payload preparation function are not optional if the workflow is represented in the test mirror.
+6. **Test supplier table:** the existing isolated test `suppliers` table is confirmed present with its own column shape. The migration must reference it only after checking all required columns and foreign-key compatibility; it must not recreate or reshape it.
+7. **RPC fidelity:** the current Operations RPC bodies were previously identified as approximations in places. Before application, each function must be compared line-by-line with the exact production function definition and the test frontend call signatures. No simplified substitute is acceptable for live customer/order/delivery workflows.
+
+### Decision
+
+Do not apply the current Operations draft and do not create the companion migration as executable DDL yet. First retrieve exact production table grants, complete remaining table/trigger/function dependencies (including the request and quotation guards), and compare all ten RPC bodies and frontend signatures. Then prepare a corrected, ordered companion migration and a corrected Operations migration as one review package.
+
+This static review did not execute the migration or change any database object. Production and isolated test databases remain unchanged.
