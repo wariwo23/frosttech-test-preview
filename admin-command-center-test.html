@@ -120,8 +120,14 @@ function showDetail(key){
   const a=document.createElement("a");a.className="open";a.href=url;a.textContent=label;a.style.color="#fff";a.style.textDecoration="none";a.style.padding="10px 13px";a.style.borderRadius="8px";a.style.fontWeight="700";a.style.fontSize="13px";links.append(a);
  };
  const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");
+ if(authorised&&key==="operations"){launch.href="departmental-admin-test.html";launch.textContent="Open Customer Requests & Orders";launch.classList.remove("hidden");}
+ if(authorised&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){
+  addWorkspace("Open Quotations & Deliveries","departmental-admin-test.html");
+  launch.href="admin-independent-quotations-test.html";
+  launch.textContent="Open Independent Quotations";
+  launch.classList.remove("hidden");
+ }
  if(authorised&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
- if(authorised&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
  if(authorised&&key==="employees"&&isSuper){
   addWorkspace("Employee Registration & Onboarding","employee-management-test.html");
   addWorkspace("Department & Operator Management","department-operator-management-test.html");
