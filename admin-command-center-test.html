@@ -79,9 +79,9 @@ operations:{group:"operations",permission:"orders.manage",title:"Operations",tex
 quotations:{group:"operations",permission:"quotations.read_operational",title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
 supplier:{group:"supplier",permission:"supplier_applications.read",title:"Supplier Management",text:"Supplier applications, review decisions, verification and account maintenance. The existing supplier test workspace remains separate until its full access checks are reconciled."},
 "supplier-quotes":{group:"supplier",permission:"supplier_applications.review",title:"Supplier Quotations",text:"Supplier quotation review, selection and decision workflows."},
-finance:{group:"finance",permission:"supplier_settlements.read",title:"Finance & Payments",text:"Financial reporting and reconciliation. Existing finance functions remain protected by their own server-side authorization."},
+finance:{group:"finance",permission:"financial_reports.read",title:"Finance & Payments",text:"Financial reporting, production payment reconciliation, financial quotation review and authorised quotation-cost submissions. Cost approval remains Super Administrator-only."},
 settlements:{group:"finance",permission:"supplier_settlements.read",title:"Supplier Settlements",text:"Supplier settlement preparation, execution, reconciliation and audit history. Execution must remain separately permission-gated."},
-payments:{group:"finance",permission:"supplier_settlements.audit.read",title:"Payments & Reconciliation",text:"Payment records, receipts and reconciliation. Payment verification actions will not be exposed until the Finance permission is reconciled with the payment verification function."},
+payments:{group:"finance",permission:"payments.read",title:"Payments & Reconciliation",text:"Production Paystack payment records, matching receipts and reconciliation. This workspace is read-only; no manual payment verification action is provided."},
 "tax-rules":{group:"tax",permission:"tax.rules.read",title:"Tax Rules & Rates",text:"Controlled tax rule configuration, applicable rates and effective dates. Only the Super Administrator may configure tax rates and effective dates."},
 "tax-assessments":{group:"tax",permission:"tax.assessments.read",title:"Tax Assessments & Remittances",text:"Tax assessments, deductions, remittance tracking, reconciliations and audit evidence."},
 "tax-certificates":{group:"tax",permission:"tax.supplier_profiles.read",title:"Supplier Tax Profiles & Certificates",text:"Supplier tax identity records, withholding documentation and certificate lifecycle."},
@@ -127,6 +127,8 @@ function showDetail(key){
   launch.textContent="Open Independent Quotations";
   launch.classList.remove("hidden");
  }
+ if(authorised&&key==="finance"){addWorkspace("Open Finance Administration","finance-admin-test.html");}
+ if(authorised&&key==="payments"){addWorkspace("Open Payments & Reconciliation","finance-admin-test.html");}
  if(authorised&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
  if(authorised&&key==="employees"&&isSuper){
   addWorkspace("Employee Registration & Onboarding","employee-management-test.html");
