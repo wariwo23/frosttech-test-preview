@@ -90,19 +90,19 @@ begin
   if auth.uid() is null or not public.is_super_admin() then
     raise exception 'Only the Super Admin may create tax rules';
   end if;
-  if p_tax_type not in ('VAT','WHT')
-     or p_direction not in ('inbound','outbound','both')
+  if p_tax_type is null or p_tax_type not in ('VAT','WHT')
+     or p_direction is null or p_direction not in ('inbound','outbound','both')
      or nullif(trim(coalesce(p_transaction_category,'')),'') is null
      or nullif(trim(coalesce(p_tax_classification,'')),'') is null
-     or p_entity_type not in ('any','individual','company','partnership','other')
-     or p_residency_status not in ('any','resident','non_resident')
+     or p_entity_type is null or p_entity_type not in ('any','individual','company','partnership','other')
+     or p_residency_status is null or p_residency_status not in ('any','resident','non_resident')
      or p_rate is null or p_rate < 0 or p_rate > 100
      or p_calculation_basis not in ('taxable_base','gross_amount','net_amount')
      or p_effective_from is null
      or (p_effective_until is not null and p_effective_until <= p_effective_from) then
     raise exception 'Invalid tax rule details';
   end if;
-  if p_tax_type = 'VAT' and (p_vat_mode not in ('inclusive','exclusive')
+  if p_tax_type = 'VAT' and (p_vat_mode is null or p_vat_mode not in ('inclusive','exclusive')
      or p_entity_type <> 'any' or p_residency_status <> 'any') then
     raise exception 'VAT rules require a VAT mode and an unsegmented supplier scope';
   end if;
@@ -217,7 +217,7 @@ begin
 
   if p_vat_enabled is true then
     if p_vat_rate is null or p_vat_rate <= 0 or p_vat_rate > 100
-       or p_vat_mode not in ('inclusive','exclusive') or p_effective_at is null then
+       or p_vat_mode is null or p_vat_mode not in ('inclusive','exclusive') or p_effective_at is null then
       raise exception 'Enabled VAT requires a valid rate, mode and effective date';
     end if;
     if exists (
@@ -229,7 +229,7 @@ begin
       raise exception 'VAT settings conflict with an active VAT rule; reconcile or deactivate the rule first';
     end if;
   else
-    if p_vat_rate is not null or p_vat_mode <> 'not_configured' or p_effective_at is not null then
+    if p_vat_rate is not null or p_vat_mode is distinct from 'not_configured' or p_effective_at is not null then
       raise exception 'Disabled VAT must have no rate or effective date and use not_configured mode';
     end if;
     if exists (select 1 from public.frosttech_tax_rules r where r.tax_type='VAT' and r.is_active) then
