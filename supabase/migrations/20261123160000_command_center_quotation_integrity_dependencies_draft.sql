@@ -578,14 +578,14 @@ for select to authenticated using (
 
 -- Explicit table grants follow the inspected production model.
 -- No direct authenticated/anon access to alternative proposals, decisions or snapshots.
+revoke all on public.supplier_quotes from public,anon;
+revoke all on public.alternative_proposals,public.alternative_proposal_decisions,
+  public.quote_request_original_snapshots from public,anon,authenticated;
+revoke all on public.quote_request_integrity_audit from public,anon,authenticated;
+revoke all on public.admin_quotation_items from public;
 grant select,insert,update,delete on public.supplier_quotes to authenticated;
 grant select on public.quote_request_integrity_audit to authenticated;
 grant select,insert,update,delete on public.admin_quotation_items to anon,authenticated;
-revoke all on public.alternative_proposals,public.alternative_proposal_decisions,
-  public.quote_request_original_snapshots from anon,authenticated;
-revoke all on public.quote_request_integrity_audit from anon;
-revoke all on public.supplier_quotes from anon;
-revoke all on public.admin_quotation_items from public;
 
 -- Trigger functions are not client RPC endpoints.
 revoke all on function public.frosttech_capture_quote_request_original_v1() from public,anon,authenticated;
