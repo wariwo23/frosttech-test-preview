@@ -14,6 +14,10 @@
 
 begin;
 
+-- The isolated test private schema is deliberately closed by default.
+-- Grant namespace lookup only; individual private functions remain separately ACL-controlled.
+grant usage on schema private to authenticated;
+
 do $preflight$
 begin
   if to_regclass('public.admin_quotations') is null
