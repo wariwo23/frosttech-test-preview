@@ -88,7 +88,9 @@ begin
 end;
 $$;
 
-revoke all on function public.frosttech_enforce_appointment_hold() from public, anon, authenticated;\n\ndrop trigger if exists frosttech_employee_appointment_hold_guard on public.frosttech_employees;
+revoke all on function public.frosttech_enforce_appointment_hold() from public, anon, authenticated;
+
+drop trigger if exists frosttech_employee_appointment_hold_guard on public.frosttech_employees;
 create trigger frosttech_employee_appointment_hold_guard
 before insert or update on public.frosttech_employees
 for each row execute function public.frosttech_enforce_appointment_hold();
