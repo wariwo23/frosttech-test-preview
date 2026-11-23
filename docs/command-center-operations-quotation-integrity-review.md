@@ -245,3 +245,36 @@ A separate, single-query read-only inspection of `information_schema.role_table_
 **Required correction to migration review:** do not simply revoke all broad table grants or blindly copy grants. The corrected migration must reproduce the exact production grant + RLS + trigger combination where applicable, while ensuring the test environment does not broaden effective access. The specific confirmed overgrant in the earlier draft remains `quote_requests INSERT` for anon/authenticated because production's captured grants do not include that privilege. All privilege decisions must be evaluated together with policies, helper functions, triggers and frontend usage.
 
 No data rows were read. This was a metadata-only production inspection.
+
+
+## Exact Operations RPC comparison — completed
+
+A fresh read-only retrieval of the live production definitions was compared against all ten function definitions in `20261123150000_command_center_operations_workspace_draft.sql`.
+
+### Results
+
+- All ten Operations function bodies are equivalent to the production bodies after ignoring whitespace and formatting.
+- Parameter names and order match the frontend call contract. Return types also match, including the table-shaped result from `ops_list_delivery_contact_logs`.
+- The live `departmental-admin.html` frontend uses the same five list RPC names through its module map and calls the five action/history RPCs with the matching named arguments.
+- The frontend source inspected was production branch `main`, file blob `da61e462290d7bb3b654b45df1a44bc8f3fa8a9a`.
+
+### Deliberate execution-context difference
+
+The draft sets each Operations function to `SET search_path = ''`; production currently uses `SET search_path TO 'public', 'pg_temp'`. This is a deliberate hardening difference, not an exact definition copy. The draft bodies schema-qualify application objects used by these functions, but this must remain part of the static review and must not be changed casually.
+
+### Schema comparison update
+
+The draft's column inventories for `quote_requests` (24 columns) and `admin_quotations` (31 columns) match the live production column names. This does not make the schema complete: production triggers and their dependencies remain absent from the draft.
+
+A fresh production trigger inventory confirms the draft omits:
+
+- `quote_requests`: original-request snapshot capture, original-field immutability, delete prevention, and private environment-classification guard (insert and update).
+- `admin_quotations`: quotation scope/version immutability, cross-quotation acceptance guard, and automatic quotation-number assignment.
+
+The draft still creates the `quote_requests` policies before creating `frosttech_can_manage_customer_requests_v1()`. This ordering must be corrected because the policy references a helper that does not yet exist at that point in the migration.
+
+The draft also grants `INSERT` on `quote_requests` to both `anon` and `authenticated`. The captured production table grants do not include `INSERT` for either role. These grants must be removed unless a separately verified and approved requirement establishes otherwise. Do not infer that other broad table grants are wrong: production `admin_quotations` relies on the combined grant, RLS, and trigger model, so grants must be compared as a complete security boundary.
+
+### Decision
+
+The ten RPC bodies are no longer a blocker. The migration remains **BLOCKED / DO NOT APPLY** because the integrity trigger graph, dependent tables/functions, policies/grants, helper creation order, and test-side supplier dependencies still need a complete reconciled migration. No migration was applied and no production object was changed.
