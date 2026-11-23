@@ -75,7 +75,7 @@ const db=window.supabaseClient;
 const $=id=>document.getElementById(id);
 let currentRole=null,permissions=new Set(),isSuper=false;
 const modules={
-operations:{group:"operations",permission:"orders.manage",title:"Operations",text:"Customer requests, quotations, orders and delivery coordination. Existing operational pages will be connected after each backend permission and page dependency is verified."},
+operations:{group:"operations",permission:"orders.manage",title:"Operations",text:"Customer requests, quotations, orders and delivery coordination. Open the protected isolated-test Operations workspace to access the verified departmental workflows."},
 quotations:{group:"operations",permission:"quotations.read_operational",title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
 supplier:{group:"supplier",permission:"supplier_applications.read",title:"Supplier Management",text:"Supplier applications, review decisions, verification and account maintenance. The existing supplier test workspace remains separate until its full access checks are reconciled."},
 "supplier-quotes":{group:"supplier",permission:"supplier_applications.review",title:"Supplier Quotations",text:"Supplier quotation review, selection and decision workflows."},
@@ -120,7 +120,7 @@ function showDetail(key){
   const a=document.createElement("a");a.className="open";a.href=url;a.textContent=label;a.style.color="#fff";a.style.textDecoration="none";a.style.padding="10px 13px";a.style.borderRadius="8px";a.style.fontWeight="700";a.style.fontSize="13px";links.append(a);
  };
  const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");
- if(authorised&&key==="operations"){launch.href="departmental-admin-test.html";launch.textContent="Open Customer Requests & Orders";launch.classList.remove("hidden");}
+ if(authorised&&key==="operations"){addWorkspace("Open Customer Requests & Orders","departmental-admin-test.html");}
  if(authorised&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){
   addWorkspace("Open Quotations & Deliveries","departmental-admin-test.html");
   launch.href="admin-independent-quotations-test.html";
