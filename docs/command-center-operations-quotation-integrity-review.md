@@ -149,3 +149,29 @@ A trigger prevents items belonging to submitted quotations from being changed, d
 The dependency graph and key integrity logic are now mapped. The next companion migration can be drafted, but it must explicitly identify which supplier-side schema objects are required and which are deliberately excluded from Operations scope. The Operations workspace itself should not receive any new supplier pricing or cost privileges.
 
 **Still not authorised:** applying SQL to the test database, deploying functions, sending invitations, changing accounts, or modifying production.
+
+
+## Exact schema inventory captured for companion migration
+
+A further read-only metadata pass captured the production column inventory for the dependency tables:
+
+- `supplier_quotes`: request, supplier and product references; quantity; supplier unit/total prices; delivery cost; validity/status; margin percentage/amount; customer total and customer quote status.
+- `alternative_proposals`: request/proposer/supplier references; version; reason; proposed payload; commercial terms; differences; supplier quote and resulting admin quotation references.
+- `alternative_proposal_decisions`: proposal/request references; decision and reason; actor/time; decision channel; normalised guest email.
+- `admin_quotation_items`: quotation and optional product references; item type, description, specifications, unit, quantity, unit price, line total, sort order, source proposal and replaced-item references.
+- `quote_request_original_snapshots`: request key, original JSON payload, payload hash, capture type and capture timestamp.
+- `quote_request_integrity_audit`: request/proposal references, actor type/id, event type/details and timestamp.
+
+The production policy inventory confirms:
+- Supplier quote SELECT/INSERT is limited to the supplier's own record when the supplier is active and verified.
+- Super Admin alone has full supplier quote management.
+- Alternative proposal reads are scoped to the request-owning customer, submitting proposer, or request manager.
+- Alternative decision and original-snapshot reads are scoped to the owning customer or request manager.
+- Integrity audit reads are request-manager-only.
+- Quotation-item management is Super Admin-only; read access is separately scoped through the parent quotation.
+
+## Important drafting constraint
+
+The test supplier table is structurally different from production in some areas, and the isolated test database has no supplier quote or alternative-proposal tables. The companion migration must not overwrite or casually reshape the existing test supplier table. Before writing executable DDL, the remaining exact production constraints, indexes, trigger bodies, trigger ordering, and referenced helper/function definitions must be retrieved and cross-checked against test-side dependencies. In particular, supplier quote price/margin trigger logic and append-only proposal/decision guards must be preserved.
+
+This is still a metadata-only review. No data rows were read, and no database object was changed.
