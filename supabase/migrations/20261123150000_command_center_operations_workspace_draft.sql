@@ -106,6 +106,21 @@ comment on table public.quote_requests is
 
 alter table public.quote_requests enable row level security;
 
+-- Helper used by the existing production quote_requests RLS model.
+-- It must exist before any policy that references it is created.
+create or replace function public.frosttech_can_manage_customer_requests_v1()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select coalesce(public.admin_has_permission('customer_requests.manage'), false);
+$function$;
+
+revoke all on function public.frosttech_can_manage_customer_requests_v1() from public, anon;
+grant execute on function public.frosttech_can_manage_customer_requests_v1() to authenticated;
+
 -- Customer/guest submission and authorised admin request review retain the
 -- production access model. Departmental access is permission-based.
 create policy "Admins can view quote requests"
@@ -133,8 +148,9 @@ create policy "Guests can submit unlinked quote requests"
   on public.quote_requests for insert to anon
   with check (customer_id is null);
 
-grant select, insert, update on public.quote_requests to authenticated;
-grant insert on public.quote_requests to anon;
+-- Match the inspected production INSERT boundary: anon/authenticated receive
+-- no direct INSERT privilege. Existing RLS INSERT policies remain inert unless
+-- a separately approved trusted submission path is provided.
 
 create table public.admin_quotations (
   id uuid primary key default gen_random_uuid(),
@@ -203,20 +219,6 @@ create policy "department_finance_quotations_read"
   using (public.admin_has_permission('quotations.read_financial'));
 
 grant select, insert, update, delete on public.admin_quotations to authenticated;
-
--- Helper used by the existing production quote_requests RLS model.
-create or replace function public.frosttech_can_manage_customer_requests_v1()
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $function$
-  select coalesce(public.admin_has_permission('customer_requests.manage'), false);
-$function$;
-
-revoke all on function public.frosttech_can_manage_customer_requests_v1() from public, anon;
-grant execute on function public.frosttech_can_manage_customer_requests_v1() to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 3. Missing delivery customer-contact log dependency.
