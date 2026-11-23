@@ -342,6 +342,9 @@ commit;
 -- 1A. Data integrity rules mirrored from the reviewed employee workflow.
 create unique index if not exists frosttech_employees_email_lower_uidx
   on public.frosttech_employees (lower(email));
+create unique index if not exists frosttech_employees_auth_user_uidx
+  on public.frosttech_employees (auth_user_id)
+  where auth_user_id is not null;
 
 do $constraints$
 begin
@@ -600,12 +603,12 @@ $function$;
 
 -- RPC execution grants: employee lifecycle actions are restricted by role inside each function.
 
--- [ ] Confirm employee onboarding/account provisioning workflow exists in test and creates
---     profiles.role='employee', auth.users app_metadata frosttech_account_type='employee',
---     verified email, and account_setup_completed_at.
 -- [ ] Confirm is_super_admin() and admin_accounts protection in test.
 -- [ ] Confirm audit table is append-only and direct client mutation remains denied.
 -- [ ] Confirm employee table has no direct anon/authenticated read/write policies.
 -- [ ] Confirm function owners can read auth.users and protected public tables.
--- [ ] Run static SQL validation and compare RPC return column names with frontend code.
--- [ ] Apply only to isolated test project after separate explicit approval.
+-- [ ] Run static SQL validation and compare every RPC signature with frontend calls.
+-- [ ] Confirm the isolated Edge Function is deployed only after separate approval.
+-- [ ] Add the isolated invitation redirect URL to the test Auth redirect allow-list.
+-- [ ] Apply SQL only to isolated test project after separate explicit approval.
+-- [ ] Do not send test invitations until the user separately authorises a test invitation.
