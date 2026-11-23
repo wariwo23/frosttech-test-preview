@@ -207,6 +207,14 @@ create table public.admin_quotations (
 comment on table public.admin_quotations is
   'Isolated-test mirror of the production quotation header table; no production records copied.';
 
+-- Match the production quotation-version uniqueness and lookup indexes.
+alter table public.admin_quotations
+  add constraint admin_quotations_version_group_number_key
+  unique (version_group_id, version_number);
+create index admin_quotations_customer_id_idx on public.admin_quotations(customer_id);
+create index admin_quotations_request_id_idx on public.admin_quotations(request_id);
+create index admin_quotations_supersedes_idx on public.admin_quotations(supersedes_quotation_id);
+
 alter table public.admin_quotations enable row level security;
 
 create policy "Admins manage direct quotations"
