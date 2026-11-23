@@ -175,3 +175,38 @@ The production policy inventory confirms:
 The test supplier table is structurally different from production in some areas, and the isolated test database has no supplier quote or alternative-proposal tables. The companion migration must not overwrite or casually reshape the existing test supplier table. Before writing executable DDL, the remaining exact production constraints, indexes, trigger bodies, trigger ordering, and referenced helper/function definitions must be retrieved and cross-checked against test-side dependencies. In particular, supplier quote price/margin trigger logic and append-only proposal/decision guards must be preserved.
 
 This is still a metadata-only review. No data rows were read, and no database object was changed.
+
+
+## Trigger, constraint, and index definitions captured
+
+A read-only production metadata pass retrieved the trigger definitions and exact trigger-function bodies for the dependency tables.
+
+### Preserved trigger behaviour
+
+- Supplier quote pricing trigger validates quantity and non-negative supplier unit/delivery costs, calculates supplier total, and deliberately resets FrostTech margin/customer total fields rather than exposing a customer price from supplier submission.
+- Alternative proposal preparation requires the immutable original-request snapshot, rejects unsupported/protected payload keys, verifies supplier proposal linkage to the supplier's submitted quote for the same request, requires explicit product linkage, and computes a differences object.
+- Alternative proposal and decision records, request snapshots, and integrity audit entries are append-only.
+- Cross-quotation acceptance serializes on the parent request and prevents acceptance of competing FrostTech/alternative quotation paths; an accepted alternative must be represented in the quotation items.
+- Quotation item scope is immutable once the parent quotation is no longer draft.
+- Integrity audit enrichment verifies the proposal/request pair and records the proposal differences.
+
+All retrieved trigger functions use an empty search_path; SECURITY DEFINER functions explicitly qualify referenced public objects. These function bodies must be carried forward faithfully and reviewed for grants/ownership before execution.
+
+### Constraints and indexes
+
+The captured production definitions include:
+- Supplier quote status check and supplier/request/product foreign keys.
+- Alternative proposal proposer-type, linkage, payload-object, reason-length, version and uniqueness constraints.
+- One decision per proposal and at most one accepted alternative decision per request (partial unique index).
+- Composite proposal/request foreign keys on decisions and integrity audit.
+- Original snapshot one-row-per-request primary key and permitted capture-type values.
+- Quotation item type, quantity, unit-price, line-total, description, unit, sort-order and JSON-object checks; quotation/product/replacement/source-proposal foreign keys.
+- Supporting request, supplier, proposal, audit chronology, quotation-order and source-proposal indexes.
+
+### Companion migration safety gate
+
+The migration must reproduce the dependency schema and trigger graph in dependency order, with exact FK/index/check definitions, and then apply restrictive grants/RLS. It must not grant direct INSERT/UPDATE/DELETE on integrity or quotation dependency tables to anon or authenticated clients. Supplier self-service policies must remain limited to a supplier's own verified and active supplier account; Super Admin-only management remains intact. No Operations permission may expose supplier quote costs, supplier margin fields, or Finance-only quotation information.
+
+The isolated test supplier table differs from production; migration preflight must stop rather than alter an existing object if its shape is unexpected. Existing draft SQL remains blocked pending companion migration and complete static review.
+
+This was a metadata/function-definition inspection only. No production data rows were read and no database writes or deployments were performed.
