@@ -358,9 +358,9 @@ begin
   v_email := pg_catalog.lower(pg_catalog.btrim(p_email));
   v_department := pg_catalog.lower(pg_catalog.btrim(p_department));
 
-  if pg_catalog.position('@' in v_email) < 2
-     or pg_catalog.position('.' in v_email) <= pg_catalog.position('@' in v_email) + 1
-     or pg_catalog.position(' ' in v_email) > 0 then
+  if pg_catalog.strpos(v_email,'@') < 2
+     or pg_catalog.strpos(v_email,'.') <= pg_catalog.strpos(v_email,'@') + 1
+     or pg_catalog.strpos(v_email,' ') > 0 then
     raise exception 'Enter a valid employee email address.';
   end if;
   if p_job_title is null or pg_catalog.btrim(p_job_title) = '' then
