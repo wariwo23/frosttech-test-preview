@@ -1,8 +1,8 @@
--- REVIEW-ONLY / BLOCKED DRAFT — DO NOT APPLY
+-- APPROVED FOR ISOLATED-TEST APPLICATION ONLY — NEVER APPLY TO PRODUCTION
 -- FrostTech Administration Command Center: Operations workspace
 -- Repository: wariwo23/frosttech-test-preview
 -- Branch: command-center-shell-stage1
--- Target project when separately approved: gqnidjifiobhqhnxjlow (isolated test ONLY)
+-- Approved target project: gqnidjifiobhqhnxjlow (isolated test ONLY)
 --
 -- Prepared from read-only inspection of the existing production Operations RPCs
 -- and table metadata. No production object or data is modified by saving this file.
@@ -807,4 +807,4 @@ commit;
 -- [ ] Confirm Super Admin retains access and all existing test accounts/records remain intact.
 -- [ ] Run Supabase Security Advisor on the isolated test project after applying.
 --
--- This file is a draft only. No SQL in this file has been applied.
+-- This migration is approved for isolated-test application only. Production is excluded.
