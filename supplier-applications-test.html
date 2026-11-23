@@ -114,6 +114,10 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <h2 style="margin:0 0 6px">Brevo email delivery test</h2>
 <p class="muted">Super Administrator diagnostic only. Sends a clearly labelled test email to your signed-in administrator email. It does not change any supplier application or decision.</p>
 <button class="primary" id="sendEmailTestButton" type="button" disabled>Verifying Super Administrator access…</button>
+<div style="margin-top:12px">
+<button class="secondary" id="sendSupplierDiagnosticButton" type="button" disabled>Verifying Super Administrator access…</button>
+<p class="muted" style="margin-bottom:0">Separate test: sends a diagnostic email only to the pre-approved, verified test supplier Bond (omonode.dele+redirecttest@gmail.com). It does not create a decision or change supplier status.</p>
+</div>
 </div>
 <section class="panel">
 <div class="top"><div><h2 style="margin:0 0 5px">Supplier applications</h2><div class="muted">Supplier Administrators can review pending applications. Super Administrators retain oversight and may override a previous decision with a recorded reason.</div></div>
@@ -248,6 +252,18 @@ async function submitDecision(btn){
   decisionInProgress=false;
  }
 }
+document.getElementById("sendSupplierDiagnosticButton").addEventListener("click",async()=>{
+ const button=document.getElementById("sendSupplierDiagnosticButton");
+ if(currentRole!=="super_admin"){showMessage("Only the Super Administrator can run this diagnostic.","error");return}
+ button.disabled=true;button.textContent="Sending supplier diagnostic email…";
+ try{
+  const {data,error}=await db.functions.invoke("send-supplier-decision-notification-test",{body:{supplier_test_mode:true}});
+  if(error)throw error;
+  if(!data||data.success!==true||data.provider_accepted!==true)throw new Error(data?.error||"Brevo did not confirm acceptance of the supplier diagnostic email.");
+  showMessage("Brevo accepted the diagnostic email for "+(data.recipient||"the allowlisted test supplier")+". Check the recipient inbox, including Spam/Junk. Provider acceptance does not guarantee inbox delivery. Provider message ID: "+(data.provider_message_id||"not returned")+". No supplier decision, notification record, or supplier status was changed.","success");
+ }catch(e){showMessage(e.message||"The supplier diagnostic could not be completed. Check the Edge Function logs before retrying.","error")}
+ finally{button.disabled=false;button.textContent="Send diagnostic email to verified test supplier"}
+});
 document.getElementById("sendEmailTestButton").addEventListener("click",async()=>{
  const button=document.getElementById("sendEmailTestButton");
  if(currentRole!=="super_admin"){showMessage("Only the Super Administrator can run this diagnostic.","error");return}
@@ -291,10 +307,13 @@ async function init(){
   document.getElementById("adminRole").textContent=currentRole.replaceAll("_"," ").toUpperCase();
   const emailPanel=document.getElementById("emailTestPanel");
   const emailTestButton=document.getElementById("sendEmailTestButton");
+  const supplierDiagnosticButton=document.getElementById("sendSupplierDiagnosticButton");
   if(currentRole==="super_admin"){
    emailPanel.classList.remove("hidden");
    emailTestButton.disabled=false;
    emailTestButton.textContent="Send test email to my admin inbox";
+   supplierDiagnosticButton.disabled=false;
+   supplierDiagnosticButton.textContent="Send diagnostic email to verified test supplier";
   }else{
    emailPanel.classList.add("hidden");
   }
