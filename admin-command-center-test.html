@@ -62,7 +62,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
   <article class="module"><div class="module-top"><div class="module-icon">✉</div><h4>Communications</h4></div><p class="desc">Notification events, email delivery monitoring, idempotency and controlled recovery.</p><div class="module-foot"><span class="status">Existing Super Admin workflow</span><button class="open" data-open="notifications" type="button">View details</button></div></article>
   <article class="module"><div class="module-top"><div class="module-icon">⚿</div><h4>Security & System Administration</h4></div><p class="desc">Employee onboarding, operator appointments, department access, permission governance and audit logs.</p><div class="module-foot"><span class="status">Existing protected workspace</span><button class="open" data-open="security" type="button">View details</button></div></article>
  </section>
- <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><p style="margin-top:14px"><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
+ <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
 </main>
 </div>
 <footer>FrostTech Administration Command Center · Isolated Test Environment. No production data or settings are changed by this page.</footer>
@@ -102,7 +102,7 @@ function showDetail(key){
  $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
  $("detailDepartment").textContent=m.group.replaceAll("-"," ");
  $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
- $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
+ $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";\n const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");\n if(allowed(key)&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}\n if(allowed(key)&&key==="quotations"&&isSuper){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
 }
 function showHome(){
  $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
