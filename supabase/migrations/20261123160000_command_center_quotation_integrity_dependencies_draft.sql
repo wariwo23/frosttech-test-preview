@@ -1,6 +1,6 @@
--- REVIEW-ONLY / NOT APPLIED
+-- APPROVED ISOLATED-TEST MIGRATION
 -- FrostTech quotation-integrity dependency layer for the isolated Operations workspace.
--- Target: gqnidjifiobhqhnxjlow ONLY, after the Operations schema draft.
+-- Target: gqnidjifiobhqhnxjlow ONLY, after the Operations schema migration.
 -- This file contains no production connection, data copy, or account changes.
 --
 -- Dependency order:
@@ -10,7 +10,7 @@
 -- The existing isolated-test suppliers table is referenced but never altered.
 -- All original-request, quotation-version, alternative-proposal and supplier-quote
 -- integrity triggers are recreated from read-only production definitions.
--- Review only: do not apply until the package review and explicit approval.
+-- This migration is approved for isolated-test application only. Never apply to production.
 
 begin;
 
@@ -583,9 +583,9 @@ revoke all on public.alternative_proposals,public.alternative_proposal_decisions
   public.quote_request_original_snapshots from public,anon,authenticated;
 revoke all on public.quote_request_integrity_audit from public,anon,authenticated;
 revoke all on public.admin_quotation_items from public;
-grant select,insert,update,delete on public.supplier_quotes to authenticated;
+grant all privileges on public.supplier_quotes to authenticated;
 grant select on public.quote_request_integrity_audit to authenticated;
-grant select,insert,update,delete on public.admin_quotation_items to anon,authenticated;
+grant all privileges on public.admin_quotation_items to anon,authenticated;
 
 -- Trigger functions are not client RPC endpoints.
 revoke all on function public.frosttech_capture_quote_request_original_v1() from public,anon,authenticated;
