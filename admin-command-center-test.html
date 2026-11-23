@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#082f55">
+<title>FrostTech Administration Command Center — Test</title>
+<style>
+:root{--navy:#082f55;--blue:#147fbd;--ice:#eaf5fc;--ink:#172b40;--muted:#64778b;--line:#dce7f0;--bg:#f3f7fb;--white:#fff;--green:#18794e;--amber:#946200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+header{background:linear-gradient(115deg,#062746,#0b4778);color:#fff;padding:18px max(16px,calc((100vw - 1280px)/2));border-bottom:4px solid #55b9ed}
+.brand{display:flex;align-items:center;gap:13px}.mark{width:44px;height:44px;border-radius:12px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:900;font-size:19px}.brand h1{font-size:20px;line-height:1.2;margin:0}.brand p{font-size:12px;color:#d8eafa;margin:4px 0 0}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px}.identity{font-size:13px;color:#e4f2fc}.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+button,a.btn{border:0;border-radius:8px;padding:10px 13px;font:700 13px Arial;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn-light{background:#fff;color:var(--navy)}.btn-outline{background:transparent;border:1px solid #9fc7e5;color:#fff}
+.layout{max-width:1280px;margin:20px auto;padding:0 16px 42px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px}
+.sidebar,.panel,.module{background:var(--white);border:1px solid var(--line);border-radius:13px;box-shadow:0 2px 7px #102b4e08}
+.sidebar{padding:13px;align-self:start;position:sticky;top:12px}.nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;padding:9px 10px}
+.nav-home,.nav-toggle,.nav-link{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:transparent;color:var(--ink);padding:11px 10px;border-radius:8px;font-size:14px;font-weight:600}
+.nav-home.active,.nav-link.active{background:var(--ice);color:var(--navy)}.nav-toggle{justify-content:space-between}.nav-toggle:hover,.nav-home:hover,.nav-link:hover{background:#f1f6fa}.nav-sub{padding:2px 0 7px 14px}.nav-link{font-size:13px;font-weight:500;padding:9px 10px}
+.main{min-width:0}.welcome{padding:21px 22px;margin-bottom:15px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:800}.welcome h2{font-size:24px;margin:5px 0}.welcome p{margin:0;color:var(--muted);max-width:760px}
+.statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:30px;background:#edf3f8;color:#42586d;font-size:12px;font-weight:700}.pill.good{background:#e8f5ed;color:var(--green)}.pill.warn{background:#fff5dc;color:var(--amber)}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:20px 2px 10px}.section-head h3{font-size:17px;margin:0}.section-head p{font-size:12px;color:var(--muted);margin:3px 0 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.module{padding:16px;min-width:0}.module-top{display:flex;align-items:center;gap:11px}.module-icon{width:38px;height:38px;border-radius:10px;background:var(--ice);display:grid;place-items:center;color:var(--navy);font-size:18px}.module h4{margin:0;font-size:15px}.module .desc{font-size:12px;color:var(--muted);margin:9px 0 13px;min-height:36px}.module-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.status{font-size:11px;font-weight:700;color:var(--amber)}.status.ready{color:var(--green)}.open{background:var(--navy);color:#fff}.open:disabled{background:#e7edf2;color:#718093;cursor:not-allowed}
+.detail{padding:22px}.detail h3{margin:0 0 7px;font-size:20px}.detail p{color:var(--muted);margin:0 0 12px}.notice{border:1px solid #f0dca7;background:#fff9e9;border-radius:9px;padding:12px;color:#765500;font-size:13px}
+footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);font-size:12px}
+.hidden{display:none!important}
+@media(max-width:820px){.layout{grid-template-columns:1fr}.sidebar{position:static}.sidebar nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.nav-title{grid-column:1/-1}.nav-sub{grid-column:1/-1}.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){header{padding:16px}.brand h1{font-size:17px}.layout{margin:12px auto;padding:0 10px 30px}.sidebar{padding:9px}.sidebar nav{grid-template-columns:1fr}.nav-sub{padding-left:10px}.grid{grid-template-columns:1fr}.welcome{padding:17px}.welcome h2{font-size:21px}.module .desc{min-height:0}}
+</style>
+</head>
+<body>
+<header>
+ <div class="brand"><div class="mark" aria-hidden="true">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Administration Command Center · Isolated Test Environment</p></div></div>
+ <div class="topline"><div class="identity" id="identity">Verifying administrator access…</div><div class="top-actions"><button class="btn-outline" id="refreshBtn" type="button">Refresh Access</button><button class="btn-light" id="signOutBtn" type="button">Sign Out</button></div></div>
+</header>
+<div class="layout">
+<aside class="sidebar" aria-label="Command Center navigation">
+ <div class="nav-title">Command Center</div>
+ <nav id="navigation">
+  <button class="nav-home active" type="button" data-page="home">⌂ <span>Home & Overview</span></button>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="true" data-group="operations">▤ <span>Operations</span><span>⌄</span></button><div class="nav-sub" data-sub="operations"><button class="nav-link" data-page="operations" type="button">Customer Requests & Orders</button><button class="nav-link" data-page="quotations" type="button">Quotations & Deliveries</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="supplier">♙ <span>Supplier Management</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="supplier"><button class="nav-link" data-page="supplier" type="button">Applications & Verification</button><button class="nav-link" data-page="supplier-quotes" type="button">Supplier Quotations</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="finance">₦ <span>Finance & Payments</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="finance"><button class="nav-link" data-page="finance" type="button">Financial Reporting</button><button class="nav-link" data-page="payments" type="button">Payments & Reconciliation</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="tax">▧ <span>Tax Administration</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="tax"><button class="nav-link" data-page="tax-rules" type="button">Tax Rules & Rates</button><button class="nav-link" data-page="tax-assessments" type="button">Assessments & Remittances</button><button class="nav-link" data-page="tax-certificates" type="button">Supplier Profiles & Certificates</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="catalogue">▣ <span>Catalogue</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="catalogue"><button class="nav-link" data-page="catalogue" type="button">Products, Prices & Stock</button><button class="nav-link" data-page="supplier-costs" type="button">Supplier Costs</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="customers">◎ <span>Customers & Advertisers</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="customers"><button class="nav-link" data-page="customers" type="button">Customer Accounts</button><button class="nav-link" data-page="advertisers" type="button">Advertiser Verification & Campaigns</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="communications">✉ <span>Communications</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="communications"><button class="nav-link" data-page="notifications" type="button">Notification Centre</button><button class="nav-link" data-page="email" type="button">Email & Delivery Logs</button></div></div>
+  <div class="nav-group"><button class="nav-toggle" type="button" aria-expanded="false" data-group="security">⚿ <span>Security & System Administration</span><span>⌄</span></button><div class="nav-sub hidden" data-sub="security"><button class="nav-link" data-page="employees" type="button">Employees & Operators</button><button class="nav-link" data-page="permissions" type="button">Roles & Permissions</button><button class="nav-link" data-page="audit" type="button">Activity & Print Audit</button></div></div>
+ </nav>
+</aside>
+<main class="main">
+ <section class="panel welcome" id="homePanel"><div class="eyebrow">Administration overview</div><h2>Command Center</h2><p>One organised entry point for FrostTech administration. Choose a department to view its responsibilities and integration status. Existing workflows remain in their original protected workspaces during this staged integration.</p><div class="statusbar"><span class="pill good" id="rolePill">Access verified</span><span class="pill">Environment: TEST ONLY</span><span class="pill warn">Integration in progress</span></div></section>
+ <div class="section-head"><div><h3 id="contentTitle">Department workspaces</h3><p id="contentSubtitle">Access is checked against the isolated test database.</p></div></div>
+ <section class="grid" id="moduleGrid">
+  <article class="module"><div class="module-top"><div class="module-icon">▤</div><h4>Operations</h4></div><p class="desc">Customer requests, quotation workflow, orders, delivery scheduling and customer contact records.</p><div class="module-foot"><span class="status">Integration pending</span><button class="open" data-open="operations" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">♙</div><h4>Supplier Management</h4></div><p class="desc">Supplier applications, verification, supplier quotations and account maintenance.</p><div class="module-foot"><span class="status">Existing test workspace</span><button class="open" data-open="supplier" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">₦</div><h4>Finance & Payments</h4></div><p class="desc">Financial reports, payment reconciliation, supplier settlements and controlled finance operations.</p><div class="module-foot"><span class="status">Integration pending</span><button class="open" data-open="finance" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">▧</div><h4>Tax Administration</h4></div><p class="desc">Tax rules, assessments, withholding, remittances, supplier tax profiles and certificates.</p><div class="module-foot"><span class="status">Integration pending</span><button class="open" data-open="tax-rules" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">▣</div><h4>Catalogue</h4></div><p class="desc">Product listings, catalogue content, selling prices, stock and restricted supplier costs.</p><div class="module-foot"><span class="status">Integration pending</span><button class="open" data-open="catalogue" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">◎</div><h4>Customers & Advertisers</h4></div><p class="desc">Customer account oversight, advertiser verification, campaign review and CAC records.</p><div class="module-foot"><span class="status">Existing review page</span><button class="open" data-open="advertisers" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">✉</div><h4>Communications</h4></div><p class="desc">Notification events, email delivery monitoring, idempotency and controlled recovery.</p><div class="module-foot"><span class="status">Existing Super Admin workflow</span><button class="open" data-open="notifications" type="button">View details</button></div></article>
+  <article class="module"><div class="module-top"><div class="module-icon">⚿</div><h4>Security & System Administration</h4></div><p class="desc">Employee onboarding, operator appointments, department access, permission governance and audit logs.</p><div class="module-foot"><span class="status">Existing protected workspace</span><button class="open" data-open="security" type="button">View details</button></div></article>
+ </section>
+ <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><p style="margin-top:14px"><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
+</main>
+</div>
+<footer>FrostTech Administration Command Center · Isolated Test Environment. No production data or settings are changed by this page.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-test.js"></script>
+<script>
+(function(){
+"use strict";
+const db=window.supabaseClient;
+const $=id=>document.getElementById(id);
+let currentRole=null,permissions=new Set(),isSuper=false;
+const modules={
+operations:{group:"operations",permission:"orders.manage",title:"Operations",text:"Customer requests, quotations, orders and delivery coordination. Existing operational pages will be connected after each backend permission and page dependency is verified."},
+quotations:{group:"operations",permission:"quotations.read_operational",title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
+supplier:{group:"supplier",permission:"supplier_applications.read",title:"Supplier Management",text:"Supplier applications, review decisions, verification and account maintenance. The existing supplier test workspace remains separate until its full access checks are reconciled."},
+"supplier-quotes":{group:"supplier",permission:"supplier_quotes.manage",title:"Supplier Quotations",text:"Supplier quotation review, selection and decision workflows."},
+finance:{group:"finance",permission:"financial_reports.read",title:"Finance & Payments",text:"Financial reporting and reconciliation. Existing finance functions remain protected by their own server-side authorization."},
+payments:{group:"finance",permission:"payments.read",title:"Payments & Reconciliation",text:"Payment records, receipts and reconciliation. Payment verification actions will not be exposed until the Finance permission is reconciled with the payment verification function."},
+"tax-rules":{group:"tax",permission:"tax.rules.read",title:"Tax Rules & Rates",text:"Controlled tax rule configuration, applicable rates and effective dates. Only the Super Administrator may configure tax rates and effective dates."},
+"tax-assessments":{group:"tax",permission:"tax.assessments.read",title:"Tax Assessments & Remittances",text:"Tax assessments, deductions, remittance tracking, reconciliations and audit evidence."},
+"tax-certificates":{group:"tax",permission:"tax.supplier_profiles.read",title:"Supplier Tax Profiles & Certificates",text:"Supplier tax identity records, withholding documentation and certificate lifecycle."},
+catalogue:{group:"catalogue",permission:"catalogue.manage",title:"Catalogue",text:"Product listings, images, descriptions, selling prices, stock and publication status."},
+"supplier-costs":{group:"catalogue",permission:"supplier_costs.read",title:"Supplier Costs",text:"Restricted supplier-cost records and pricing controls. These remain Super Administrator-only."},
+customers:{group:"customers",permission:"customers.read",title:"Customer Accounts",text:"Customer account oversight and customer service administration."},
+advertisers:{group:"customers",permission:"advertisers.review",title:"Advertiser Verification & Campaigns",text:"Advertiser applications, CAC documentation and campaign review. Existing review authority remains restricted pending explicit permission mapping."},
+notifications:{group:"communications",permission:"notifications.read",title:"Notification Centre",text:"Notification event monitoring, delivery logs and controlled recovery. Recovery actions remain Super Administrator-only."},
+email:{group:"communications",permission:"email_logs.read",title:"Email & Delivery Logs",text:"Email event status, delivery attempts, idempotency and troubleshooting."},
+employees:{group:"security",permission:"employees.manage",title:"Employees & Operators",text:"Employee onboarding and operator management. Appointment, department assignment, suspension and removal remain Super Administrator-only."},
+permissions:{group:"security",permission:"permissions.manage",title:"Roles & Permissions",text:"Department roles, permission governance and access lifecycle. Super Administrator remains the highest authority."},
+audit:{group:"security",permission:"audit.read",title:"Activity & Print Audit",text:"Administrative activity history and sensitive print authorization records. Print approval remains Super Administrator-only."}
+};
+function setStatus(msg){$("contentSubtitle").textContent=msg;}
+function allowed(key){const m=modules[key];return isSuper||(m&&permissions.has(m.permission));}
+function showDetail(key){
+ const m=modules[key];if(!m)return;
+ $("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.remove("hidden");
+ $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
+ $("detailDepartment").textContent=m.group.replaceAll("-"," ");
+ $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
+ $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
+}
+function showHome(){
+ $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
+ $("contentTitle").textContent="Department workspaces";setStatus("Access is checked against the isolated test database.");
+}
+async function checkAccess(){
+ if(!db?.auth)throw new Error("Test authentication service did not load.");
+ const {data:{session},error}=await db.auth.getSession();if(error)throw error;
+ if(!session?.user){location.replace("test-admin-login.html?return=admin-command-center-test.html");return;}
+ const user=session.user;
+ const {data:profile,error:pe}=await db.from("profiles").select("id,role,is_active").eq("id",user.id).maybeSingle();
+ if(pe)throw pe;
+ if(!profile||profile.is_active!==true||profile.role!=="admin")throw new Error("This account is not authorised for the test administration portal.");
+ const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;
+ if(!["super_admin","operations_admin","supplier_admin","finance_admin","catalogue_admin"].includes(role))throw new Error("No active Command Center administrator role was found.");
+ currentRole=role;isSuper=role==="super_admin";
+ const permissionNames=[...new Set(Object.values(modules).map(x=>x.permission))];
+ const checks=await Promise.all(permissionNames.map(async p=>{const {data,error}=await db.rpc("admin_has_permission",{required_permission:p});if(error)throw error;return [p,data===true];}));
+ permissions=new Set(checks.filter(x=>x[1]).map(x=>x[0]));
+ $("identity").textContent=(user.email||"Administrator")+" · "+role.replaceAll("_"," ");
+ $("rolePill").textContent=isSuper?"Super Administrator — full overview":role.replaceAll("_"," ");
+ $("rolePill").className="pill good";
+ document.querySelectorAll("[data-open]").forEach(b=>{const key=b.dataset.open;b.disabled=!allowed(key);});
+ document.querySelectorAll("[data-page]").forEach(b=>{const key=b.dataset.page;if(key==="home")return;b.disabled=!allowed(key);b.title=b.disabled?"Your role does not have this permission.":"";});
+ document.querySelectorAll("[data-group]").forEach(b=>{
+  const group=b.dataset.group;
+  const keys=Object.keys(modules).filter(k=>modules[k].group===group);
+  const visible=isSuper||keys.some(k=>allowed(k));
+  b.closest(".nav-group").classList.toggle("hidden",!visible);
+ });
+ setStatus("Role and department permissions verified by the isolated test database. Unintegrated workflows are clearly marked.");
+}
+$("navigation").addEventListener("click",e=>{
+ const toggle=e.target.closest("[data-group]");
+ if(toggle){const name=toggle.dataset.group;document.querySelectorAll("[data-sub]").forEach(s=>{const open=s.dataset.sub===name&&s.classList.contains("hidden");s.classList.toggle("hidden",!open);const b=document.querySelector('[data-group="'+s.dataset.sub+'"]');if(b)b.setAttribute("aria-expanded",String(open));});return;}
+ const page=e.target.closest("[data-page]");if(page){if(page.dataset.page==="home"){showHome();return;}if(!page.disabled)showDetail(page.dataset.page);}
+});
+document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>showDetail(b.dataset.open)));
+$("detailBack").addEventListener("click",showHome);
+$("refreshBtn").addEventListener("click",async()=>{try{await checkAccess();}catch(e){setStatus(e.message);}});
+$("signOutBtn").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){setStatus(error.message);return;}location.replace("test-admin-login.html");});
+checkAccess().catch(e=>{ $("identity").textContent="Access not verified";$("contentTitle").textContent="Administrator access required";setStatus(e.message||"Unable to verify access.");$("moduleGrid").classList.add("hidden");$("rolePill").textContent="Access denied";$("rolePill").className="pill warn";});
+})();
+</script>
+</body>
+</html>
