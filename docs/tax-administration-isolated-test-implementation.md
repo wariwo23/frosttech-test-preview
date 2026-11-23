@@ -14,7 +14,7 @@ Implemented the approved Tax Administration corrections in the isolated test env
 - `tax_assessment_source_dedup_guard` — migration version `20261123142927`
 - `tax_assessment_concurrency_guard` — migration version `20261123143050`
 - `tax_settlement_net_basis_grossup` — migration version `20261123143142`
-- `tax_assessment_source_normalization` — migration version `20261123143218`
+- `tax_assessment_source_normalization` — migration version `20261123143221`
 
 ### 1. WHT settlement calculation
 
@@ -60,7 +60,7 @@ Created `tax-admin-test.html` and connected all three Command Center entries:
 - Assessments & Remittances
 - Supplier Profiles & Certificates
 
-The workspace includes permission-gated forms and lists for rule creation/activation/deactivation, VAT settings, tax assessments and reconciliation, remittance evidence upload and independent verification, supplier profile submission/verification, and certificate upload/recording. Tax documents are uploaded to the existing private `frosttech-tax-documents` bucket. Super Admin settings and rule controls are not exposed to Finance Admin.
+The workspace includes permission-gated forms and lists for rule creation/activation/deactivation, VAT settings, tax assessments and reconciliation, remittance evidence upload and independent verification, supplier profile submission/verification, certificate upload/recording, the supplier-settlement WHT ledger, and tax audit history. Tax documents are uploaded to the existing private `frosttech-tax-documents` bucket. Super Admin settings and rule controls are not exposed to Finance Admin.
 
 ## Verification completed
 
