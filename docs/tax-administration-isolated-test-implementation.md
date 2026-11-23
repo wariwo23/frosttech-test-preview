@@ -14,6 +14,7 @@ Implemented the approved Tax Administration corrections in the isolated test env
 - `tax_assessment_source_dedup_guard` — migration version `20261123142927`
 - `tax_assessment_concurrency_guard` — migration version `20261123143050`
 - `tax_settlement_net_basis_grossup` — migration version `20261123143142`
+- `tax_assessment_source_normalization` — migration version `20261123143218`
 
 ### 1. WHT settlement calculation
 
@@ -22,6 +23,8 @@ Implemented the approved Tax Administration corrections in the isolated test env
 - Gross/taxable-base basis: WHT is deducted from the verified supplier item total.
 - Net-amount basis: supplier item total is treated as the required net payment; WHT is grossed up as `net × rate / (100 − rate)`, gross entitlement becomes net plus WHT, and net payable remains the supplier item total.
 - Net-basis rates of 100% or higher are rejected.
+- Source-type names are normalized before assessment and duplicate checks, preventing case-variant bypasses.
+- Cross-source duplicate checks are serialized with an advisory transaction lock.
 - Settlement submission and Super Admin approval independently revalidate line totals and the matching WHT formula.
 - Existing separate-person preparation/submission and Super Admin approval controls remain in place.
 - The tax rule snapshot records the classification, entity, residency, calculation basis, legal reference, and effective period.
@@ -71,7 +74,7 @@ The workspace includes permission-gated forms and lists for rule creation/activa
 - Settlement basis constraint now accepts `taxable_base`, `gross_amount`, and `net_amount`.
 - The assessment cross-source guard is attached to the assessment table.
 - RPC execution grants deny `anon`; authenticated execution remains protected by each function's internal role/permission checks.
-- A numeric formula check was run as a calculation check only; it did not create or modify financial records.
+- Numeric formula check (illustrative 10% rate only): net basis on 100 yields WHT 11.11, gross entitlement 111.11, and net payable 100; gross basis on 100 yields WHT 10.00 and net payable 90.00. This was calculation-only and did not create or modify financial records.
 
 ## Not performed
 
