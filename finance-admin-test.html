@@ -88,6 +88,15 @@ async function loadSupplierDisbursementPanel(){
   if(settlementResult.error)throw settlementResult.error;
   if(disbursementResult.error)throw disbursementResult.error;
   const settlements=settlementResult.data||[],disbursements=disbursementResult.data||[];
+  if(preview){
+   $("supplierSettlementRows").append(node("p","muted","Super Administrator Finance preview is read-only. Upload, recording and verification actions are disabled."));
+   settlements.forEach(s=>{const card=node("article","record");card.append(node("h3","",s.settlement_number||s.id),node("p","muted","Status: "+s.status+" · Net payable: "+naira(s.net_payable)));$("supplierSettlementRows").append(card);});
+   disbursements.forEach(d=>{const card=node("article","record");card.append(node("h3","",d.id),node("p","muted","Settlement: "+d.settlement_id+" · "+d.payment_method+" · "+naira(d.amount)+" · "+d.status));$("supplierVerificationRows").append(card);});
+   if(!settlements.length)$("supplierSettlementRows").append(node("p","muted","No eligible supplier settlements."));
+   if(!disbursements.length)$("supplierVerificationRows").append(node("p","muted","No supplier disbursement records."));
+   disbMessage("Super Administrator preview: read-only. No actions are available.","success");
+   return;
+  }
   const bySettlement=new Map();
   disbursements.forEach(d=>{if(!bySettlement.has(d.settlement_id))bySettlement.set(d.settlement_id,[]);bySettlement.get(d.settlement_id).push(d);});
   if(!settlements.length)$("supplierSettlementRows").append(node("p","muted","No approved or partially paid supplier settlements are available in the isolated test database. No settlement has been created for this test."));
@@ -142,6 +151,11 @@ async function loadSupplierDisbursementPanel(){
   pending.forEach(d=>{
    const card=node("article","record");card.append(node("h3","",d.id));
    card.append(node("p","muted","Settlement: "+d.settlement_id+" · Amount: "+naira(d.amount)+" · Bank ref: "+(d.payment_reference||"—")+" · Initiated: "+dateText(d.initiated_at)));
+   if(d.evidence_path){
+    const viewEvidence=node("button","secondary","View Private Bank Evidence");
+    viewEvidence.onclick=async()=>{viewEvidence.disabled=true;try{const {data,error}=await db.storage.from("supplier-disbursement-evidence").createSignedUrl(d.evidence_path,60);if(error)throw error;window.open(data.signedUrl,"_blank","noopener");}catch(e){disbMessage(e.message||"Unable to open private evidence.","error");}finally{viewEvidence.disabled=false;}};
+    card.append(viewEvidence);
+   }
    const own=d.initiated_by===financeUser?.id;
    if(own){card.append(node("p","message","You initiated this transfer. You cannot verify your own transfer."));}
    else{
