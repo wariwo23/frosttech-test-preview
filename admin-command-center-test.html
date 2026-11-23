@@ -62,7 +62,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
   <article class="module"><div class="module-top"><div class="module-icon">✉</div><h4>Communications</h4></div><p class="desc">Notification events, email delivery monitoring, idempotency and controlled recovery.</p><div class="module-foot"><span class="status">Existing Super Admin workflow</span><button class="open" data-open="notifications" type="button">View details</button></div></article>
   <article class="module"><div class="module-top"><div class="module-icon">⚿</div><h4>Security & System Administration</h4></div><p class="desc">Employee onboarding, operator appointments, department access, permission governance and audit logs.</p><div class="module-foot"><span class="status">Existing protected workspace</span><button class="open" data-open="security" type="button">View details</button></div></article>
  </section>
- <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
+ <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><div id="detailLinks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
 </main>
 </div>
 <footer>FrostTech Administration Command Center · Isolated Test Environment. No production data or settings are changed by this page.</footer>
@@ -129,7 +129,7 @@ async function checkAccess(){
  const user=session.user;
  const {data:profile,error:pe}=await db.from("profiles").select("id,role,is_active").eq("id",user.id).maybeSingle();
  if(pe)throw pe;
- if(!profile||profile.is_active!==true||profile.role!=="admin")throw new Error("This account is not authorised for the test administration portal.");
+ if(!profile||profile.is_active!==true)throw new Error("This account is not authorised for the test administration portal.");
  const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;
  if(!["super_admin","operations_admin","supplier_admin","finance_admin","catalogue_admin"].includes(role))throw new Error("No active Command Center administrator role was found.");
  currentRole=role;isSuper=role==="super_admin";
@@ -147,7 +147,7 @@ async function checkAccess(){
   const visible=isSuper||keys.some(k=>allowed(k));
   b.closest(".nav-group").classList.toggle("hidden",!visible);
  });
- setStatus("Role and department permissions verified by the isolated test database. Unintegrated workflows are clearly marked.");
+ setStatus("Role and department permissions verified by the isolated test database. Connected security workspaces are available; remaining workflows are clearly marked.");
 }
 $("navigation").addEventListener("click",e=>{
  const toggle=e.target.closest("[data-group]");
