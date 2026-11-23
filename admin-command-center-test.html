@@ -79,7 +79,8 @@ operations:{group:"operations",permission:"orders.manage",title:"Operations",tex
 quotations:{group:"operations",permission:"quotations.read_operational",title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
 supplier:{group:"supplier",permission:"supplier_applications.read",title:"Supplier Management",text:"Supplier applications, review decisions, verification and account maintenance. The existing supplier test workspace remains separate until its full access checks are reconciled."},
 "supplier-quotes":{group:"supplier",permission:"supplier_quotes.manage",title:"Supplier Quotations",text:"Supplier quotation review, selection and decision workflows."},
-finance:{group:"finance",permission:"financial_reports.read",title:"Finance & Payments",text:"Financial reporting and reconciliation. Existing finance functions remain protected by their own server-side authorization."},\nsettlements:{group:"finance",permission:"supplier_settlements.read",title:"Supplier Settlements",text:"Supplier settlement preparation, execution, reconciliation and audit history. Execution must remain separately permission-gated."},
+finance:{group:"finance",permission:"financial_reports.read",title:"Finance & Payments",text:"Financial reporting and reconciliation. Existing finance functions remain protected by their own server-side authorization."},
+settlements:{group:"finance",permission:"supplier_settlements.read",title:"Supplier Settlements",text:"Supplier settlement preparation, execution, reconciliation and audit history. Execution must remain separately permission-gated."},
 payments:{group:"finance",permission:"payments.read",title:"Payments & Reconciliation",text:"Payment records, receipts and reconciliation. Payment verification actions will not be exposed until the Finance permission is reconciled with the payment verification function."},
 "tax-rules":{group:"tax",permission:"tax.rules.read",title:"Tax Rules & Rates",text:"Controlled tax rule configuration, applicable rates and effective dates. Only the Super Administrator may configure tax rates and effective dates."},
 "tax-assessments":{group:"tax",permission:"tax.assessments.read",title:"Tax Assessments & Remittances",text:"Tax assessments, deductions, remittance tracking, reconciliations and audit evidence."},
@@ -102,7 +103,10 @@ function showDetail(key){
  $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
  $("detailDepartment").textContent=m.group.replaceAll("-"," ");
  $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
- $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";\n const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");\n if(allowed(key)&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}\n if(allowed(key)&&key==="quotations"&&isSuper){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
+ $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
+ const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");
+ if(allowed(key)&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
+ if(allowed(key)&&key==="quotations"&&isSuper){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
 }
 function showHome(){
  $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
