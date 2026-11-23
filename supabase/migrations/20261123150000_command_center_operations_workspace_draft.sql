@@ -147,9 +147,10 @@ create policy "Guests can submit unlinked quote requests"
   on public.quote_requests for insert to anon
   with check (customer_id is null);
 
--- Match the inspected production INSERT boundary: anon/authenticated receive
--- no direct INSERT privilege. Existing RLS INSERT policies remain inert unless
--- a separately approved trusted submission path is provided.
+-- Match the inspected production INSERT boundary explicitly. Supabase
+-- default privileges may grant table access to API roles, so revoke INSERT
+-- from both client roles rather than relying on comments or RLS alone.
+revoke insert on table public.quote_requests from public, anon, authenticated;
 
 create table public.admin_quotations (
   id uuid primary key default gen_random_uuid(),
