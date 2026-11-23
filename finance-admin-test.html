@@ -17,8 +17,16 @@
 <section id="quotations" class="card hidden"><h2>Financial Quotation Review</h2><div id="quotationRows"></div></section>
 <section id="submissions" class="card hidden"><h2>My Quotation Cost Submissions</h2><p class="muted">This section shows submissions made by your own administrator account. Approval and rejection remain restricted to the Super Administrator.</p><div id="submissionRows"></div></section>
 <section id="directActivity" class="card hidden"><h2>Independent Direct Quotations — Finance Ledger</h2><p class="muted">Separate direct-quotation records and payment attempts. Test Mode and Production are shown separately. Supplier assignments, supplier costs and margins are not displayed here. Existing production reconciliation above remains unchanged.</p><h3>Test Mode (Development)</h3><div id="directDevelopmentRows"></div><h3>Production</h3><div id="directProductionRows"></div></section>
+<section id="supplierDisbursement" class="card hidden">
+<h2>Supplier Disbursement Evidence · Isolated Test</h2>
+<p class="muted">Manual bank transfers only. Upload the bank evidence before recording the transfer. Verification requires a different administrator from the person who recorded it. Online provider verification remains server-side.</p>
+<p id="disbursementStatus" class="message" role="status">Checking supplier settlement access…</p>
+<div id="supplierSettlementRows"></div>
+<h3>Manual Transfers Awaiting Independent Verification</h3>
+<div id="supplierVerificationRows"></div>
+</section>
 </main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script><script>
-"use strict";const db=window.supabaseClient;if(!db)throw new Error("The isolated FrostTech test database client did not load.");const $=id=>document.getElementById(id);let preview=false;
+"use strict";const db=window.supabaseClient;if(!db)throw new Error("The isolated FrostTech test database client did not load.");const $=id=>document.getElementById(id);let preview=false;let financeUser=null;
 function ftConfirm(message,confirmLabel="Continue",danger=false){return new Promise(resolve=>{const back=$("ftModalBackdrop"),yes=$("ftModalConfirm"),no=$("ftModalCancel");$("ftModalMessage").textContent=message;yes.textContent=confirmLabel;yes.className=danger?"danger":"";back.classList.add("open");back.setAttribute("aria-hidden","false");const close=value=>{back.classList.remove("open");back.setAttribute("aria-hidden","true");yes.removeEventListener("click",accept);no.removeEventListener("click",cancel);resolve(value);};const accept=()=>close(true),cancel=()=>close(false);yes.addEventListener("click",accept);no.addEventListener("click",cancel);no.focus();});}
 function status(t,c=""){$("status").textContent=t;$("status").className="message "+c;}function node(t,c,x){const n=document.createElement(t);if(c)n.className=c;if(x!==undefined)n.textContent=x;return n;}function naira(v){return v===null||v===undefined?"—":"₦"+Number(v).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});}function dateText(v){return v?new Date(v).toLocaleString():"—";}function metric(root,label,value){const m=node("div","metric");m.append(node("span","muted",label),node("strong","",value));root.append(m);}function table(root,heads,rows){root.replaceChildren();if(!rows.length){root.append(node("p","muted","No records for this period."));return;}const wrap=node("div","tablewrap"),t=node("table"),h=node("thead"),tr=node("tr");heads.forEach(x=>tr.append(node("th","",x)));h.append(tr);t.append(h);const b=node("tbody");rows.forEach(row=>{const r=node("tr");row.forEach(x=>r.append(node("td","",String(x??"—"))));b.append(r);});t.append(b);wrap.append(t);root.append(wrap);}
 function period(){return [$("startDate").value,$("endDate").value];}
@@ -61,7 +69,103 @@ function renderCostSubmissionForms(quotes){
  });
  root.append(wrap);
 }
-async function openFinanceWorkspace(user){try{const {data:role,error}=await db.rpc("admin_get_my_role");if(error)throw error;if(role!=="finance_admin"&&role!=="super_admin")throw new Error("Access restricted to Finance Administrators and Super Administrator preview.");preview=role==="super_admin";$("financeLogin").classList.add("hidden");$("financeWorkspaceStatus").classList.remove("hidden");$("heading").textContent="Finance Administration";$("email").textContent=user.email||"Administrator";$("role").textContent=role+(preview?" — Read-only preview":"");$("session").classList.remove("hidden");["dashboard","payments","quotations","submissions","directActivity"].forEach(id=>$(id).classList.remove("hidden"));const now=new Date(),first=new Date(now.getFullYear(),now.getMonth(),1);const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");$("startDate").value=iso(first);$("endDate").value=iso(now);await load();return true;}catch(e){$("financeLoginMessage").textContent=e.message||"Access verification failed."; $("financeLoginMessage").className="message error";return false;}}
+
+function disbMessage(text,kind=""){const el=$("disbursementStatus");el.textContent=text;el.className="message "+kind;}
+function makeField(label,type="text",attrs={}){const box=node("div","");const l=node("label","",label);const i=document.createElement("input");i.type=type;Object.entries(attrs).forEach(([k,v])=>i.setAttribute(k,v));box.append(l,i);return {box,input:i};}
+async function loadSupplierDisbursementPanel(){
+ const section=$("supplierDisbursement");
+ section.classList.remove("hidden");
+ $("supplierSettlementRows").replaceChildren();
+ $("supplierVerificationRows").replaceChildren();
+ try{
+  const {data:allowed,error:permissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_settlements.execute"});
+  if(permissionError)throw permissionError;
+  if(!allowed){section.classList.add("hidden");return;}
+  const [settlementResult,disbursementResult]=await Promise.all([
+   db.from("frosttech_supplier_settlements").select("id,settlement_number,supplier_id,currency,gross_entitlement,wht_amount,net_payable,status,created_at").in("status",["approved","processing","partially_paid"]).order("created_at",{ascending:false}),
+   db.from("frosttech_supplier_disbursements").select("id,settlement_id,payment_method,amount,currency,status,payment_reference,evidence_path,initiated_by,verified_by,initiated_at,verified_at,failure_reason").order("initiated_at",{ascending:false})
+  ]);
+  if(settlementResult.error)throw settlementResult.error;
+  if(disbursementResult.error)throw disbursementResult.error;
+  const settlements=settlementResult.data||[],disbursements=disbursementResult.data||[];
+  const bySettlement=new Map();
+  disbursements.forEach(d=>{if(!bySettlement.has(d.settlement_id))bySettlement.set(d.settlement_id,[]);bySettlement.get(d.settlement_id).push(d);});
+  if(!settlements.length)$("supplierSettlementRows").append(node("p","muted","No approved or partially paid supplier settlements are available in the isolated test database. No settlement has been created for this test."));
+  settlements.forEach(s=>{
+   const card=node("article","record");
+   card.append(node("h3","",s.settlement_number||s.id));
+   card.append(node("p","muted","Status: "+s.status+" · Net payable: "+naira(s.net_payable)+" · Currency: "+(s.currency||"NGN")));
+   const existing=bySettlement.get(s.id)||[];
+   if(existing.length)card.append(node("p","muted","Existing disbursements: "+existing.map(d=>d.status+" "+naira(d.amount)).join(" · ")));
+   const grid=node("div","grid");
+   const amount=makeField("Transfer amount (NGN)","number",{min:"0.01",step:"0.01",max:String(s.net_payable),required:"required"});
+   const bankRef=makeField("Bank transfer reference","text",{maxlength:"180",required:"required",placeholder:"Bank transaction reference"});
+   const file=makeField("Bank evidence (PDF, JPG or PNG)","file",{accept:"application/pdf,image/jpeg,image/png",required:"required"});
+   grid.append(amount.box,bankRef.box,file.box);card.append(grid);
+   const send=node("button","","Upload Evidence & Record Transfer");
+   const result=node("p","muted","");
+   send.onclick=async()=>{
+    const value=Number(amount.input.value),proof=file.input.files&&file.input.files[0],reference=bankRef.input.value.trim();
+    if(!Number.isFinite(value)||value<=0||!/^\\d+(\\.\\d{1,2})?$/.test(amount.input.value.trim())){disbMessage("Enter a valid positive amount with no more than two decimal places.","error");return;}
+    if(value>Number(s.net_payable)){disbMessage("The amount cannot exceed the settlement net payable. The server also checks the remaining balance.","error");return;}
+    if(reference.length<3){disbMessage("Enter the bank transfer reference.","error");return;}
+    if(!proof){disbMessage("Choose the bank evidence file first.","error");return;}
+    if(!["application/pdf","image/jpeg","image/png"].includes(proof.type)){disbMessage("Only PDF, JPG and PNG files are accepted.","error");return;}
+    if(proof.size<1||proof.size>10485760){disbMessage("The evidence file must be between 1 byte and 10 MB.","error");return;}
+    if(!(await ftConfirm("Upload this private bank evidence and record a pending manual transfer? This does not itself verify or send money.","Upload & Record")))return;
+    send.disabled=true;disbMessage("Uploading private evidence…");
+    let evidencePath=null;
+    try{
+     const {data:userData,error:userError}=await db.auth.getUser();if(userError)throw userError;
+     const uid=userData.user&&userData.user.id;if(!uid)throw new Error("Your Finance session has expired. Sign in again.");
+     const ext=proof.type==="application/pdf"?"pdf":proof.type==="image/jpeg"?"jpg":"png";
+     evidencePath=s.id+"/"+uid+"/"+crypto.randomUUID()+"."+ext;
+     const {error:uploadError}=await db.storage.from("supplier-disbursement-evidence").upload(evidencePath,proof,{cacheControl:"3600",upsert:false,contentType:proof.type});
+     if(uploadError)throw uploadError;
+     result.textContent="Evidence uploaded privately. Recording the pending transfer…";
+     const {data:disbursementId,error:recordError}=await db.rpc("frosttech_record_supplier_disbursement",{
+      p_settlement_id:s.id,p_payment_method:"manual_bank_transfer",p_amount:value,
+      p_idempotency_key:crypto.randomUUID(),p_payment_reference:reference,
+      p_provider_reference:null,p_evidence_path:evidencePath
+     });
+     if(recordError)throw new Error(recordError.message+" Evidence is already uploaded at "+evidencePath+". Do not upload it again; retain this path for support/retry.");
+     disbMessage("Manual transfer recorded as pending. It now requires independent verification. No payment was sent by this action.","success");
+     result.textContent="Pending disbursement ID: "+disbursementId;
+     await loadSupplierDisbursementPanel();
+    }catch(e){disbMessage(e.message||"Unable to record the manual transfer.","error");if(evidencePath)result.textContent="Evidence path (already uploaded; do not re-upload): "+evidencePath;}
+    finally{send.disabled=false;}
+   };
+   card.append(send,result);$("supplierSettlementRows").append(card);
+  });
+  const pending=disbursements.filter(d=>d.payment_method==="manual_bank_transfer"&&["pending","processing"].includes(d.status));
+  if(!pending.length)$("supplierVerificationRows").append(node("p","muted","No manual transfers are awaiting verification."));
+  pending.forEach(d=>{
+   const card=node("article","record");card.append(node("h3","",d.id));
+   card.append(node("p","muted","Settlement: "+d.settlement_id+" · Amount: "+naira(d.amount)+" · Bank ref: "+(d.payment_reference||"—")+" · Initiated: "+dateText(d.initiated_at)));
+   const own=d.initiated_by===financeUser?.id;
+   if(own){card.append(node("p","message","You initiated this transfer. You cannot verify your own transfer."));}
+   else{
+    const note=makeField("Independent verification note (minimum 5 characters)","text",{maxlength:"500",placeholder:"Record what was independently checked"});
+    const actions=node("div","toolbar");
+    const yes=node("button","","Confirm Successful");
+    const no=node("button","secondary","Mark Failed");
+    const decide=async decision=>{
+     if(note.input.value.trim().length<5){disbMessage("Enter a verification note of at least five characters.","error");return;}
+     if(!(await ftConfirm("Record this manual transfer as "+decision+"? Verify the bank transaction independently before proceeding.","Confirm "+decision,true)))return;
+     yes.disabled=true;no.disabled=true;
+     try{const {data,error}=await db.rpc("frosttech_verify_manual_supplier_disbursement",{p_disbursement_id:d.id,p_decision:decision,p_verification_note:note.input.value.trim()});if(error)throw error;disbMessage("Verification recorded. Current status: "+data,"success");await loadSupplierDisbursementPanel();}
+     catch(e){disbMessage(e.message||"Verification failed.","error");yes.disabled=false;no.disabled=false;}
+    };
+    yes.onclick=()=>decide("successful");no.onclick=()=>decide("failed");
+    actions.append(yes,no);card.append(note.box,actions);
+   }
+   $("supplierVerificationRows").append(card);
+  });
+  disbMessage("Supplier settlement access verified. "+settlements.length+" eligible settlement(s); "+pending.length+" manual transfer(s) awaiting verification.","success");
+ }catch(e){disbMessage(e.message||"Unable to load supplier settlement workflow.","error");}
+}
+
+async function openFinanceWorkspace(user){try{const {data:role,error}=await db.rpc("admin_get_my_role");if(error)throw error;if(role!=="finance_admin"&&role!=="super_admin")throw new Error("Access restricted to Finance Administrators and Super Administrator preview.");preview=role==="super_admin";financeUser=user;$("financeLogin").classList.add("hidden");$("financeWorkspaceStatus").classList.remove("hidden");$("heading").textContent="Finance Administration";$("email").textContent=user.email||"Administrator";$("role").textContent=role+(preview?" — Read-only preview":"");$("session").classList.remove("hidden");["dashboard","payments","quotations","submissions","directActivity"].forEach(id=>$(id).classList.remove("hidden"));const now=new Date(),first=new Date(now.getFullYear(),now.getMonth(),1);const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");$("startDate").value=iso(first);$("endDate").value=iso(now);await load();await loadSupplierDisbursementPanel();return true;}catch(e){$("financeLoginMessage").textContent=e.message||"Access verification failed."; $("financeLoginMessage").className="message error";return false;}}
 $("financeLoginForm").addEventListener("submit",async event=>{event.preventDefault();const email=$("financeEmail").value.trim(),password=$("financePassword").value;if(!email||!password)return;const button=$("financeLoginBtn");button.disabled=true;button.textContent="Verifying…";$("financeLoginMessage").textContent="Verifying Finance sign-in…";$("financeLoginMessage").className="message";try{const {data,error}=await db.auth.signInWithPassword({email,password});if(error)throw error;const ok=await openFinanceWorkspace(data.user);if(!ok)await db.auth.signOut();}catch(e){$("financeLoginMessage").textContent=e.message||"Finance sign-in failed."; $("financeLoginMessage").className="message error";}finally{button.disabled=false;button.textContent="Sign In to Finance";}});
 $("financeForgotPassword").addEventListener("click",async event=>{event.preventDefault();const email=$("financeEmail").value.trim();if(!email){$("financeLoginMessage").textContent="Enter your administrator email address first."; $("financeLoginMessage").className="message error";$("financeEmail").focus();return;}try{const redirectTo=new URL("test-admin-login.html?reset=1",window.location.href).toString();const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo});if(error)throw error;$("financeLoginMessage").textContent="If an account exists with that email, a password-reset email has been requested. Please check your inbox and spam folder.";$("financeLoginMessage").className="message success";}catch(e){$("financeLoginMessage").textContent=e.message||"Password reset request failed.";$("financeLoginMessage").className="message error";}});
 $("refresh").addEventListener("click",load);$("logout").addEventListener("click",async()=>{const {error}=await db.auth.signOut();if(error){status(error.message,"error");return;}location.href="test-admin-login.html";});
