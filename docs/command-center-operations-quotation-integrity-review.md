@@ -92,3 +92,60 @@ The production cross-quotation guard runs on both quotation and alternative-deci
 The exact production columns and constraints for the four dependency tables have been inspected. The alternative proposal table also references supplier and supplier-quote records, and the quotation item table references proposal IDs. The companion migration must therefore map the exact test prerequisites for `suppliers`, `supplier_quotes`, `alternative_proposals`, and the corresponding functions/triggers before writing executable DDL.
 
 No test-side dependency exists yet; the test project returned no matching integrity tables or helper functions in the read-only check. No production or test data was modified.
+
+
+## Supplier and alternative-proposal dependency map — completed read-only pass
+
+### Isolated test project inventory
+
+The isolated test database currently has the `suppliers` table, but the following production workflow dependencies were not found there:
+- `supplier_quotes`
+- `alternative_proposals`
+- `alternative_proposal_decisions`
+- `admin_quotation_items`
+- `quote_request_original_snapshots`
+- `quote_request_integrity_audit`
+
+The test project also has no matching production integrity trigger/helper functions. This confirms the companion dependency migration must build a coherent workflow layer, not just add a few foreign keys.
+
+### Supplier quote relationship
+
+Production `supplier_quotes` references:
+- `quote_requests` (request)
+- `suppliers` (supplier)
+- `products` (optional catalogue product)
+
+Its pricing trigger calculates supplier total from unit price × quantity and deliberately resets FrostTech margin and customer total fields. The table has supplier-owned read/insert policies for active, verified suppliers and a Super Admin manage policy. It must not be replaced with a broader authenticated policy.
+
+Production `suppliers` also has a guard that prevents disabling, un-verifying, or un-approving a supplier while selected supplier-cost records still depend on that supplier. The test project has the suppliers table but does not have the related quotation/proposal dependency layer; the selected-supplier guard must only be carried over if its `product_supplier_costs` dependency and exact test schema are verified.
+
+### Alternative proposal validation
+
+The production insert trigger for `alternative_proposals`:
+- Requires an original-request snapshot to exist.
+- Removes protected customer identity, budget and delivery-address fields from the comparison baseline.
+- Rejects unsupported fields in the proposed payload.
+- For supplier proposals, verifies the linked supplier quote belongs to the same request and supplier and is still submitted.
+- Requires the proposed product reference to match the linked supplier quote.
+- Builds a complete proposed payload and a field-by-field differences object.
+
+Alternative proposals and decisions are append-only: updates and deletes are rejected. The customer decision table permits only authenticated-customer or verified-guest-OTP decision channels, with mutually consistent actor fields.
+
+### Quotation item integrity
+
+Production `admin_quotation_items` references the quotation header, optional catalogue product, source alternative proposal, and optional replaced item. It enforces item type, non-empty description/unit, positive quantity, non-negative unit/line price, JSON object specifications, and non-negative sort order.
+
+A trigger prevents items belonging to submitted quotations from being changed, deleted, or moved to another quotation. Direct table management is Super Admin-only; read access is separately scoped to the owning customer or authorised request manager.
+
+### Production supplier quote policies
+
+- Supplier SELECT and INSERT are limited to the supplier's own row when the supplier is active and verified.
+- Super Admin has full supplier-quote management.
+- Supplier profile reads are own-row or admin; supplier writes/deletes are admin-only.
+- The test mirror must retain these boundaries and must not give Operations Admin supplier commercial quote visibility merely because Operations can view customer requests.
+
+### Current readiness
+
+The dependency graph and key integrity logic are now mapped. The next companion migration can be drafted, but it must explicitly identify which supplier-side schema objects are required and which are deliberately excluded from Operations scope. The Operations workspace itself should not receive any new supplier pricing or cost privileges.
+
+**Still not authorised:** applying SQL to the test database, deploying functions, sending invitations, changing accounts, or modifying production.
