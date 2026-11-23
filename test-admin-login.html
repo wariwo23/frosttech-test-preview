@@ -568,7 +568,7 @@
         if (!profile || profile.is_active !== true || profile.role !== "admin") return null;
         const { data: role, error: roleError } = await db.rpc("admin_get_my_role");
         if (roleError) throw roleError;
-        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin"].includes(role) ? role : null;
+        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin", "catalogue_admin"].includes(role) ? role : null;
       }
 
       async function showLoginOrActiveSession() {
@@ -637,19 +637,24 @@
 
       function getReturnUrl(role) {
         const params = new URLSearchParams(window.location.search);
-        const defaultDestination = role === "supplier_admin" ? "supplier-applications-test.html" : "admin-independent-quotations-test.html";
-        const requested = params.get("return") || defaultDestination;
+        const requested = params.get("return") || "admin-command-center-test.html";
+        const allowedDestinations = [
+          "admin-command-center-test.html",
+          "admin-independent-quotations-test.html",
+          "supplier-applications-test.html"
+        ];
         try {
           const destination = new URL(requested, window.location.href);
           const currentDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
+          const fileName = destination.pathname.split("/").pop();
           if (destination.origin !== window.location.origin ||
               !destination.pathname.startsWith(currentDirectory) ||
-              !["admin-independent-quotations-test.html", "supplier-applications-test.html"].includes(destination.pathname.split("/").pop())) {
-            return "admin-independent-quotations-test.html";
+              !allowedDestinations.includes(fileName)) {
+            return "admin-command-center-test.html";
           }
           return destination.href;
         } catch (error) {
-          return "admin-independent-quotations-test.html";
+          return "admin-command-center-test.html";
         }
       }
 
