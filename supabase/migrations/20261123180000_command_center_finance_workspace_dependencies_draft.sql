@@ -46,6 +46,25 @@ create table if not exists public.payment_receipt_voids (
 alter table public.payment_receipt_voids enable row level security;
 revoke all on public.payment_receipt_voids from public, anon, authenticated;
 grant all on public.payment_receipt_voids to service_role;
+drop policy if exists frosttech_service_manage_receipt_voids on public.payment_receipt_voids;
+create policy frosttech_service_manage_receipt_voids
+  on public.payment_receipt_voids for all to service_role
+  using (true) with check (true);
+
+create or replace function public.frosttech_prevent_receipt_void_changes()
+returns trigger
+language plpgsql
+set search_path = ''
+as $function$
+begin
+  raise exception 'Receipt void records are append-only and cannot be changed or deleted.';
+end;
+$function$;
+revoke all on function public.frosttech_prevent_receipt_void_changes() from public, anon, authenticated;
+drop trigger if exists frosttech_receipt_void_immutable_trigger on public.payment_receipt_voids;
+create trigger frosttech_receipt_void_immutable_trigger
+before delete or update on public.payment_receipt_voids
+for each row execute function public.frosttech_prevent_receipt_void_changes();
 
 -- Cost submission records are visible to their submitter and Super Admin only.
 create table if not exists public.quotation_cost_submissions (
