@@ -378,3 +378,21 @@ Read-only checks confirmed:
 The SQL migrations are now recorded in the isolated test project's migration history and their expected objects/security metadata are present. This is a successful schema deployment and metadata verification, **not yet an end-to-end functional test**. The next test stage must use the existing Super Admin and Operations Admin test accounts to verify the Command Center pages, authorised reads, denied cross-department access, and guarded delivery/request actions without creating real customer-facing records or sending notifications.
 
 No production objects, data, accounts, policies, functions or deployments were changed. No employee was created, no operator appointed, and no invitation or email was sent.
+
+
+### Database-level role checks completed after application
+
+Read-only, transaction-rolled-back checks simulated the existing isolated-test identities through the authenticated database role. No rows were inserted or changed.
+
+**Operations Admin test account**
+- `admin_get_my_role()` returned `operations_admin`.
+- `customer_requests.manage` and `deliveries.manage` returned true.
+- `payments.verify` returned false.
+- Customer-request, quotation, order and delivery list RPCs all executed successfully and returned zero rows in the isolated test dataset.
+
+**Super Admin test account**
+- `admin_get_my_role()` returned `super_admin`.
+- `is_super_admin()` and the legacy `is_admin()` returned true.
+- The Super Admin permission override returned true for Finance verification and Operations customer-request management.
+
+These checks establish the expected role and permission decisions at the database function layer. They do not replace browser-level verification of the Command Center navigation, actual page loading, and cross-department direct-URL denial.
