@@ -320,3 +320,28 @@ The companion migration restores the **schema and integrity protections needed b
 The previously identified **static migration blockers have been addressed in the review-only SQL drafts**. This is not yet a runtime validation: the isolated test schema has not been changed, neither migration has been applied, and the SQL has not been executed against a scratch database. Therefore the package is **READY FOR THE NEXT REVIEW GATE, NOT CLEARED FOR APPLICATION**.
 
 Before any isolated-test application, perform a final file-to-file dependency/order and SQL syntax review, then obtain explicit approval to apply both drafts together to `gqnidjifiobhqhnxjlow`. Run the post-apply RPC, RLS, trigger, grant and negative-access tests before treating the Operations workspace as verified. Production remains untouched.
+
+
+## Final reconciliation pass — 23 November 2026
+
+A further read-only production metadata pass retrieved the full trigger-function definitions, trigger graph, dependency column inventories, constraints, indexes, RLS policies and role-table grants. No production rows were read.
+
+### Verified against production
+
+- The captured trigger functions for original-request snapshot capture, original-field immutability, request deletion prevention, environment classification, quotation numbering/version immutability, cross-quotation acceptance, supplier quote pricing, alternative payload preparation, audit enrichment, append-only protection, and quotation-item immutability were retrieved from production.
+- The dependency column inventories and principal constraints were captured for supplier quotes, alternative proposals, alternative decisions, quotation items, original-request snapshots and integrity audit.
+- Production trigger names and event timing were captured and compared with the companion migration's trigger graph.
+- The companion's RLS policy predicates match the captured production predicates for the dependency tables.
+- Production grants confirm broad base privileges for anon/authenticated on quotation items (with RLS), authenticated supplier-quote privileges (with RLS), authenticated SELECT on integrity audit (with RLS), and no anon/authenticated table grants on alternative proposals, alternative decisions or original snapshots.
+- The Operations migration's quote-request INSERT boundary required one final correction: explicitly revoke INSERT from PUBLIC, anon and authenticated because Supabase default privileges may otherwise grant it. This correction is now in the Operations draft.
+- The companion migration's supplier quote and quotation-item grants were aligned to the captured production privilege levels.
+
+### Important qualification
+
+This is a metadata and static-source reconciliation, not a runtime test against a scratch database. The Operations RPC comparison remains complete (all ten names, arguments, return types and bodies matched, with the documented empty-search_path hardening difference). The dependency migration's reconstructed DDL has now been checked against the production metadata and trigger definitions available to this review, but it has not yet been executed in PostgreSQL. It must not be described as a byte-for-byte dump of production.
+
+### Application gate
+
+The package remains eligible for the already-authorised isolated-test application only after the final SQL package is fetched once more and the exact target preflight is confirmed. Apply to project `gqnidjifiobhqhnxjlow` only. Do not apply to production. If either migration fails, stop immediately and inspect the failure; do not improvise a production change or bypass a preflight.
+
+No migration has been applied in this reconciliation pass. Production remains unchanged.
