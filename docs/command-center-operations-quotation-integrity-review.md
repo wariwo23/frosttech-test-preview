@@ -278,3 +278,45 @@ The draft also grants `INSERT` on `quote_requests` to both `anon` and `authentic
 ### Decision
 
 The ten RPC bodies are no longer a blocker. The migration remains **BLOCKED / DO NOT APPLY** because the integrity trigger graph, dependent tables/functions, policies/grants, helper creation order, and test-side supplier dependencies still need a complete reconciled migration. No migration was applied and no production object was changed.
+
+
+## Migration block resolution — review package prepared
+
+**Companion migration draft:** `supabase/migrations/20261123160000_command_center_quotation_integrity_dependencies_draft.sql`
+
+**Operations migration corrections:** `supabase/migrations/20261123150000_command_center_operations_workspace_draft.sql`
+
+### Blockers closed in the SQL drafts
+
+1. The Operations helper `frosttech_can_manage_customer_requests_v1()` is now created, restricted and granted to authenticated before any `quote_requests` policy references it.
+2. Direct INSERT grants on `quote_requests` to anon/authenticated have been removed. This matches the captured production role grants; the existing customer/guest RLS insert policies are retained but do not themselves confer table privileges.
+3. Production quotation version uniqueness and lookup indexes are included: unique `(version_group_id, version_number)`, plus customer, request and superseded-quotation indexes.
+4. The companion migration recreates the captured production integrity dependency graph:
+   - supplier quote table, pricing trigger and verified-active supplier / Super Admin RLS;
+   - immutable original request payload helper and one-time snapshot capture;
+   - original request field immutability, deletion prevention and trusted environment-classification guard;
+   - append-only snapshots, proposal, decision and integrity audit records;
+   - alternative proposal payload validation, supplier-quote linkage and difference calculation;
+   - quotation line items and post-submission item immutability;
+   - quotation version scope guard, approved-snapshot immutability, automatic quotation numbering and cross-acceptance guard;
+   - required foreign keys, checks, unique constraints, partial unique index and supporting indexes.
+5. The existing isolated-test `suppliers` table is not altered. The companion preflight requires its reviewed `id`, `user_id`, `is_verified` and `is_active` columns and fails closed if they differ.
+6. RLS and grants are intentionally restrictive for the dependency tables. Alternative proposal/decision/snapshot tables remain RPC-mediated; supplier quotes remain limited to the supplier's own eligible row and Super Admin; the integrity audit remains request-manager read-only; quotation item management remains Super Admin-only with scoped read access.
+
+### Production comparison status
+
+- All ten Operations RPC bodies, names, argument order and return types were previously compared with production and the departmental-admin frontend; all ten matched.
+- The quote request and quotation column inventories match production. Generated quotation subtotal and total expressions were checked against production metadata.
+- The production quotation version-group uniqueness and lookup indexes were added after the first comparison.
+- The deliberate empty `search_path` hardening in the Operations RPCs remains documented; all referenced application objects are schema-qualified.
+- Existing Operations role permissions are added only if missing; no other role permission rows are rewritten.
+
+### Scope boundary that remains explicit
+
+The companion migration restores the **schema and integrity protections needed by the Operations quotation/request workspace**. It does not port the full customer/supplier alternative-proposal RPC suite or supplier portal frontend into the test environment. Those are separate workflow integrations and must be audited before any claim that the complete customer/supplier alternative-proposal journey is available in test. No customer, supplier or advertiser RLS policies outside this reviewed dependency set are changed.
+
+### Current decision
+
+The previously identified **static migration blockers have been addressed in the review-only SQL drafts**. This is not yet a runtime validation: the isolated test schema has not been changed, neither migration has been applied, and the SQL has not been executed against a scratch database. Therefore the package is **READY FOR THE NEXT REVIEW GATE, NOT CLEARED FOR APPLICATION**.
+
+Before any isolated-test application, perform a final file-to-file dependency/order and SQL syntax review, then obtain explicit approval to apply both drafts together to `gqnidjifiobhqhnxjlow`. Run the post-apply RPC, RLS, trigger, grant and negative-access tests before treating the Operations workspace as verified. Production remains untouched.
