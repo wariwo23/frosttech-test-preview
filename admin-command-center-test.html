@@ -128,6 +128,9 @@ function showDetail(key){
   launch.classList.remove("hidden");
  }
  if(authorised&&key==="finance"){addWorkspace("Open Finance Administration","finance-admin-test.html");}
+ if(authorised&&key==="tax-rules"){addWorkspace("Open Tax Rules & Rates","tax-admin-test.html#rules");}
+ if(authorised&&key==="tax-assessments"){addWorkspace("Open Assessments & Remittances","tax-admin-test.html#assessments");}
+ if(authorised&&key==="tax-certificates"){addWorkspace("Open Supplier Profiles & Certificates","tax-admin-test.html#profiles");}
  if(authorised&&key==="payments"){addWorkspace("Open Payments & Reconciliation","finance-admin-test.html");}
  if(authorised&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
  if(authorised&&key==="employees"&&isSuper){
