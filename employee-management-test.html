@@ -58,7 +58,7 @@ async function loadEmployees(){
     const activate=document.createElement("button");activate.type="button";activate.textContent=appointmentHold?"Employment Activation On Hold":"Activate Employment";activate.disabled=appointmentHold;
     if(appointmentHold)activate.title="Activation remains disabled until FrostTech officially launches.";activate.addEventListener("click",()=>{if(appointmentHold)return;ask("Activate employment for "+e.full_name+"? This does not appoint the employee as a departmental administrator.","Activate Employee",async()=>{
       activate.disabled=true;const {data,error}=await db.rpc("admin_activate_frosttech_employee",{p_employee_id:e.employee_id});if(error)throw error;if(data!==true)throw new Error("Employee activation was not confirmed.");message("listMessage","Employment activated for "+e.full_name+". Departmental access remains a separate Super Administrator action.","success");await loadEmployees();
-    }));actions.append(activate);
+    });});actions.append(activate);
    }else if(e.employment_status==="invited"){actions.textContent="Waiting for employee account setup completion.";}
    else if(e.employment_status==="active"){actions.textContent="Employment active. Use Department Operator Management to appoint access.";}
    else{actions.textContent="No onboarding action is available.";}
