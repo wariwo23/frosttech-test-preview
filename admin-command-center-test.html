@@ -93,11 +93,12 @@ notifications:{group:"communications",permission:"notifications.read",title:"Not
 email:{group:"communications",permission:"email_logs.read",title:"Email & Delivery Logs",text:"Email event status, delivery attempts, idempotency and troubleshooting."},
 employees:{group:"security",permission:"employees.manage",title:"Employees & Operators",text:"Employee onboarding and operator management. Appointment, department assignment, suspension and removal remain Super Administrator-only."},
 permissions:{group:"security",permission:"permissions.manage",title:"Roles & Permissions",text:"Department roles, permission governance and access lifecycle. Super Administrator remains the highest authority."},
-audit:{group:"security",permission:"audit.read",title:"Activity & Print Audit",text:"Administrative activity history and sensitive print authorization records. Print approval remains Super Administrator-only."}
+audit:{group:"security",permission:"audit.read",title:"Activity & Print Audit",text:"Administrative activity history and sensitive print authorization records. Print approval remains Super Administrator-only."},
+security:{group:"security",permission:"security.super_admin",title:"Security & System Administration",text:"Super Administrator workspace for employee onboarding, operator appointments, department assignments, permission governance and audit oversight. This entry is restricted to the Super Administrator."}
 };
 function setStatus(msg){$("contentSubtitle").textContent=msg;}
 function allowed(key){
- const m=modules[key];if(isSuper)return true;
+ const m=modules[key];if(key==="security")return isSuper;if(isSuper)return true;
  const roleScopes={
   operations_admin:["operations","quotations"],
   supplier_admin:["supplier","supplier-quotes"],
