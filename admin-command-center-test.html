@@ -113,10 +113,22 @@ function showDetail(key){
  $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
  $("detailDepartment").textContent=m.group.replaceAll("-"," ");
  $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
- $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
+ const authorised=allowed(key);
+ $("detailNotice").textContent=authorised?"Your account is authorised to view this department entry. Open the relevant protected workspace below. Existing server-side access checks remain in force.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
+ const links=$("detailLinks");links.replaceChildren();
+ const addWorkspace=(label,url)=>{
+  const a=document.createElement("a");a.className="open";a.href=url;a.textContent=label;a.style.color="#fff";a.style.textDecoration="none";a.style.padding="10px 13px";a.style.borderRadius="8px";a.style.fontWeight="700";a.style.fontSize="13px";links.append(a);
+ };
  const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");
- if(allowed(key)&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
- if(allowed(key)&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
+ if(authorised&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
+ if(authorised&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
+ if(authorised&&key==="employees"&&isSuper){
+  addWorkspace("Employee Registration & Onboarding","employee-management-test.html");
+  addWorkspace("Department & Operator Management","department-operator-management-test.html");
+ }
+ if(authorised&&key==="audit"&&isSuper){
+  addWorkspace("Administrator Activity Log","admin-management-test.html");
+ }
 }
 function showHome(){
  $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
