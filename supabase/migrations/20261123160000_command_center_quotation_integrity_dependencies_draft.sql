@@ -14,6 +14,11 @@
 
 begin;
 
+-- The isolated test project does not yet contain the non-exposed private
+-- schema used by the production environment-classification trigger.
+create schema private authorization postgres;
+revoke all on schema private from public, anon, authenticated, service_role;
+
 do $preflight$
 begin
   if to_regclass('public.quote_requests') is null
