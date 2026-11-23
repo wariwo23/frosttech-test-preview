@@ -1,4 +1,4 @@
--- REVIEW-ONLY DRAFT — DO NOT APPLY YET
+-- REVIEW-ONLY / BLOCKED DRAFT — DO NOT APPLY
 -- FrostTech Administration Command Center: Operations workspace
 -- Repository: wariwo23/frosttech-test-preview
 -- Branch: command-center-shell-stage1
@@ -21,6 +21,15 @@
 --     application/auth objects.
 --   * Direct access to delivery_customer_contact_logs remains revoked.
 --   * Sensitive supplier costs and margins are removed from Operations results.
+--
+-- IMPORTANT BLOCKER: Production quote_requests/admin_quotations carry additional
+-- integrity triggers, snapshot/audit tables, version guards, alternative-proposal
+-- dependencies, and generated quotation totals. The test project lacks those
+-- dependencies. This draft currently models only the minimum columns needed by
+-- the Operations list RPCs; it is NOT safe to apply until a separate compatible
+-- integrity-dependency migration is prepared and reviewed. No original-request
+-- snapshot, alternative proposal, quotation versioning, or generated-total
+-- protections may be silently omitted.
 --
 -- PRE-FLIGHT: This draft expects the existing isolated-test admin_accounts,
 -- admin_role_permissions, admin_activity_log, profiles, products, customers,
@@ -138,8 +147,8 @@ create table public.admin_quotations (
   delivery_cost numeric not null default 0,
   additional_charges numeric not null default 0,
   discount numeric not null default 0,
-  subtotal numeric null,
-  total_amount numeric null,
+  subtotal numeric generated always as (quantity::numeric * unit_price) stored,
+  total_amount numeric generated always as (((quantity::numeric * unit_price) + delivery_cost + additional_charges) - discount) stored,
   validity_date date null,
   notes text null,
   status text not null default 'draft',
@@ -767,6 +776,13 @@ commit;
 -- ---------------------------------------------------------------------------
 -- 7. Post-apply test plan (NOT executed by this draft).
 -- ---------------------------------------------------------------------------
+-- [BLOCKED] Recreate and test production quote-request original snapshot capture,
+--           immutability guard, delete guard, integrity audit, and environment guard.
+-- [BLOCKED] Recreate and test quotation version immutability, approved snapshot
+--           protection, cross-quotation acceptance guard, and quotation numbering.
+-- [BLOCKED] Include the alternative proposal / quotation-item dependencies needed
+--           by the production cross-acceptance guard, or document an approved,
+--           isolated-test-only compatibility strategy before proceeding.
 -- [ ] Confirm all ten RPC signatures match departmental-admin.html.
 -- [ ] Confirm anon cannot execute any Operations RPC.
 -- [ ] Confirm authenticated customer/supplier accounts cannot execute Operations RPCs.
