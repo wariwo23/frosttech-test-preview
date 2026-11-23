@@ -57,6 +57,13 @@ begin
 end;
 $function$;
 
+drop trigger if exists frosttech_tax_rule_overlap_guard on public.frosttech_tax_rules;
+create trigger frosttech_tax_rule_overlap_guard
+before insert or update of tax_type,direction,transaction_category,tax_classification,
+  entity_type,residency_status,effective_from,effective_until,is_active
+on public.frosttech_tax_rules
+for each row execute function public.frosttech_guard_tax_rule_overlap();
+
 -- New explicit rule-creation signature. Old callers remain supported below.
 create or replace function public.frosttech_create_tax_rule(
   p_tax_type text,
@@ -300,7 +307,7 @@ alter table public.frosttech_supplier_settlements
   drop constraint if exists frosttech_settlement_wht_basis_ck;
 alter table public.frosttech_supplier_settlements
   add constraint frosttech_settlement_wht_basis_ck
-  check (tax_rule_snapshot->>'calculation_basis' in ('taxable_base','gross_amount'));
+  check (coalesce(tax_rule_snapshot->>'calculation_basis' in ('taxable_base','gross_amount'),false));
 
 create or replace function public.frosttech_prepare_supplier_settlement(
   p_supplier_id uuid,
