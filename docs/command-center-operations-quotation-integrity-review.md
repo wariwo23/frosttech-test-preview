@@ -229,3 +229,19 @@ The current Operations SQL draft was re-opened and statically inspected against 
 Do not apply the current Operations draft and do not create the companion migration as executable DDL yet. First retrieve exact production table grants, complete remaining table/trigger/function dependencies (including the request and quotation guards), and compare all ten RPC bodies and frontend signatures. Then prepare a corrected, ordered companion migration and a corrected Operations migration as one review package.
 
 This static review did not execute the migration or change any database object. Production and isolated test databases remain unchanged.
+
+
+## Production table-grant comparison — correction and precise interpretation
+
+A separate, single-query read-only inspection of `information_schema.role_table_grants` captured the effective role grants for the relevant production tables. This clarifies the earlier static-review warning:
+
+- Production `quote_requests` has broad base table privileges for anon/authenticated in several operations, but **neither anon nor authenticated has INSERT** in the captured grants. RLS policies and triggers are essential to constrain the remaining operations.
+- Production `admin_quotations` and `admin_quotation_items` show broad base table privileges for anon/authenticated, again relying on RLS and integrity triggers to restrict effective access. Therefore, the previous statement that broad authenticated table privileges on `admin_quotations` were necessarily broader than production was too strong; the grant list does not support that conclusion.
+- Production `supplier_quotes` grants authenticated table privileges, while RLS limits supplier access to the supplier's own eligible record and Super Admin policy controls management. No anon table grants were returned for supplier quotes.
+- Production `alternative_proposals`, `alternative_proposal_decisions`, and `quote_request_original_snapshots` grant table privileges to service_role/postgres, not anon/authenticated in the captured results.
+- Production `quote_request_integrity_audit` includes authenticated SELECT, but RLS still scopes reads to request managers; mutation privileges are not granted to authenticated in the captured results.
+- Existing production orders/order_items/deliveries show broad base grants too, with RLS policies providing the effective restrictions. Do not treat the presence of a base grant as proof that a user can perform the action.
+
+**Required correction to migration review:** do not simply revoke all broad table grants or blindly copy grants. The corrected migration must reproduce the exact production grant + RLS + trigger combination where applicable, while ensuring the test environment does not broaden effective access. The specific confirmed overgrant in the earlier draft remains `quote_requests INSERT` for anon/authenticated because production's captured grants do not include that privilege. All privilege decisions must be evaluated together with policies, helper functions, triggers and frontend usage.
+
+No data rows were read. This was a metadata-only production inspection.
