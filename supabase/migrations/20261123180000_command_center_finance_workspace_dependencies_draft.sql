@@ -28,11 +28,33 @@ begin
      or to_regprocedure('public.admin_has_permission(text)') is null then
     raise exception 'Finance migration preflight failed: required test dependencies are missing.';
   end if;
-  if to_regclass('private') is null then
+  if not exists (select 1 from pg_namespace where nspname = 'private') then
     raise exception 'Finance migration preflight failed: private schema is missing.';
   end if;
 end;
 $preflight$;
+
+-- Define the private Super Admin predicate before policies reference it.
+create or replace function private.is_active_super_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from public.admin_accounts aa
+    join public.profiles p on p.id = aa.user_id
+    where aa.user_id = (select auth.uid())
+      and aa.role = 'super_admin'
+      and aa.is_active is true
+      and p.role = 'admin'
+      and p.is_active is true
+  );
+$function$;
+revoke all on function private.is_active_super_admin() from public, anon;
+grant execute on function private.is_active_super_admin() to authenticated, service_role;
 
 -- Receipt voids are required for reconciliation to exclude voided receipts.
 create table if not exists public.payment_receipt_voids (
