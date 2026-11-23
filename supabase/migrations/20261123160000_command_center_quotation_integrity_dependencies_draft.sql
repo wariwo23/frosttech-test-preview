@@ -573,6 +573,27 @@ for select to authenticated using (
 );
 create policy quote_integrity_audit_manager_read on public.quote_request_integrity_audit
 for select to authenticated using (public.frosttech_can_manage_customer_requests_v1());
+-- Production's is_admin() predicate is profile-role based. The isolated test
+-- project did not yet have this helper, so provide the same decision rule with
+-- a locked search_path and explicit authenticated-only execution.
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid()
+      and role = 'admin'
+      and is_active = true
+  );
+$function$;
+revoke all on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
 create policy admin_quotation_items_admin_manage on public.admin_quotation_items
 for all to authenticated using (public.is_admin()) with check (public.is_admin());
 create policy admin_quotation_items_customer_read on public.admin_quotation_items
