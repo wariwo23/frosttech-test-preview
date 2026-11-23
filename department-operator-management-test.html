@@ -53,10 +53,12 @@ function renderEmployees(){
   card.append(node("p","Departmental role: "+(roleNames[current]||"Not appointed")));
   const actions=node("div","","actions");
   if(e.employment_status==="active"&&e.auth_user_id&&roles[e.department]){
-   const label=current?"Confirm / Refresh Department Appointment":"Appoint Department Administrator";
-   actionButton(actions,label,"",()=>confirmAction("Appoint "+e.full_name+" as "+roleNames[roles[e.department]]+" for "+departments[e.department]+"? The server will verify the employee's department and eligibility.",async()=>{
+   const label=appointmentHold?"Appointment On Hold":(current?"Confirm / Refresh Department Appointment":"Appoint Department Administrator");
+   const appointment=node("button",label);appointment.type="button";appointment.disabled=appointmentHold;
+   appointment.title=appointmentHold?"Appointment hold must be released by the Super Administrator after launch authorisation.":"";
+   appointment.addEventListener("click",()=>{if(appointmentHold)return;confirmAction("Appoint "+e.full_name+" as "+roleNames[roles[e.department]]+" for "+departments[e.department]+"? The server will verify the employee's department and eligibility.",async()=>{
     const {error}=await db.rpc("admin_appoint_departmental_admin",{p_user_id:e.auth_user_id,p_role:roles[e.department]});if(error)throw error;msg("employeeStatus","Department appointment updated for "+e.full_name+".","success");await loadEmployees();await loadAdmins();
-   }));
+   });});actions.append(appointment);
   }else actions.append(node("span","Appointment requires active employment, completed account setup and a registered department.","muted"));
   card.append(actions);root.append(card);
  });
@@ -70,7 +72,7 @@ async function loadAdmins(){
   if(superAdmin)card.append(node("p","Protected permanent Super Administrator account. Role and status cannot be changed here.","muted"));
   else{const actions=node("div","","actions");
    if(active)actionButton(actions,"Suspend","danger",()=>confirmAction("Suspend departmental administrator access? Employment and the user account remain unchanged.",async()=>{const {error}=await db.rpc("admin_set_departmental_admin_status",{p_user_id:a.user_id,p_is_active:false});if(error)throw error;await loadAdmins();await loadEmployees();}));
-   else {const reactivate=node("button",appointmentHold?"Reactivation On Hold":"Reactivate");reactivate.type="button";reactivate.disabled=appointmentHold;reactivate.addEventListener("click",()=>confirmAction("Reactivate this departmental administrator?",async()=>{const {error}=await db.rpc("admin_set_departmental_admin_status",{p_user_id:a.user_id,p_is_active:true});if(error)throw error;await loadAdmins();await loadEmployees();}));
+   else {const reactivate=node("button",appointmentHold?"Reactivation On Hold":"Reactivate");reactivate.type="button";reactivate.disabled=appointmentHold;reactivate.addEventListener("click",()=>{if(appointmentHold)return;confirmAction("Reactivate this departmental administrator?",async()=>{const {error}=await db.rpc("admin_set_departmental_admin_status",{p_user_id:a.user_id,p_is_active:true});if(error)throw error;await loadAdmins();await loadEmployees();});});actions.append(reactivate);}
    actionButton(actions,"Remove Departmental Access","secondary",()=>confirmAction("Remove departmental administrator access? The FrostTech user and employee records will remain.",async()=>{const {error}=await db.rpc("admin_remove_departmental_admin",{p_user_id:a.user_id});if(error)throw error;await loadAdmins();await loadEmployees();}));
    card.append(actions);
   }$("admins").append(card);
