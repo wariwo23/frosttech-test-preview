@@ -96,7 +96,16 @@ permissions:{group:"security",permission:"permissions.manage",title:"Roles & Per
 audit:{group:"security",permission:"audit.read",title:"Activity & Print Audit",text:"Administrative activity history and sensitive print authorization records. Print approval remains Super Administrator-only."}
 };
 function setStatus(msg){$("contentSubtitle").textContent=msg;}
-function allowed(key){const m=modules[key];return isSuper||(m&&permissions.has(m.permission));}
+function allowed(key){
+ const m=modules[key];if(isSuper)return true;
+ const roleScopes={
+  operations_admin:["operations","quotations"],
+  supplier_admin:["supplier","supplier-quotes"],
+  finance_admin:["finance","payments","settlements","tax-rules","tax-assessments","tax-certificates","quotations"],
+  catalogue_admin:["catalogue"]
+ };
+ return !!(m&&(permissions.has(m.permission)||(roleScopes[currentRole]||[]).includes(key)));
+}
 function showDetail(key){
  const m=modules[key];if(!m)return;
  $("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.remove("hidden");
@@ -106,7 +115,7 @@ function showDetail(key){
  $("detailNotice").textContent=allowed(key)?"Your account is authorised to view this department entry. The underlying workflow is not yet connected to this Command Center screen; the original protected page remains unchanged.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
  const launch=$("detailLaunch");launch.classList.add("hidden");launch.removeAttribute("href");
  if(allowed(key)&&key==="supplier"){launch.href="supplier-applications-test.html";launch.classList.remove("hidden");}
- if(allowed(key)&&key==="quotations"&&isSuper){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
+ if(allowed(key)&&key==="quotations"&&["super_admin","operations_admin","finance_admin"].includes(currentRole)){launch.href="admin-independent-quotations-test.html";launch.classList.remove("hidden");}
 }
 function showHome(){
  $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
