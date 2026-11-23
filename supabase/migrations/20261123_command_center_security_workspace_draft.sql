@@ -298,45 +298,6 @@ begin
 end;
 $function$;
 
--- Explicit authenticated execution only; each function independently verifies Super Admin.
-revoke all on function public.admin_create_frosttech_employee(text,text,text,text) from public, anon;
-revoke all on function public.admin_activate_frosttech_employee(uuid) from public, anon;
-revoke all on function public.employee_complete_frosttech_account_setup() from public, anon;
-revoke all on function public.admin_list_frosttech_employee_management() from public, anon;
-revoke all on function public.admin_list_administrator_accounts() from public, anon;
-revoke all on function public.admin_appoint_departmental_admin(uuid,text) from public, anon;
-revoke all on function public.admin_set_departmental_admin_status(uuid,boolean) from public, anon;
-revoke all on function public.admin_remove_departmental_admin(uuid) from public, anon;
-revoke all on function public.admin_list_activity_log(integer,integer) from public, anon;
-
-grant execute on function public.admin_create_frosttech_employee(text,text,text,text) to authenticated;
-grant execute on function public.admin_activate_frosttech_employee(uuid) to authenticated;
-grant execute on function public.employee_complete_frosttech_account_setup() to authenticated;
-revoke all on function public.admin_complete_employee_invitation(uuid,uuid,uuid) from public, anon, authenticated;
-revoke all on function public.admin_find_employee_invitation_user(uuid) from public, anon, authenticated;
-grant execute on function public.admin_complete_employee_invitation(uuid,uuid,uuid) to service_role;
-grant execute on function public.admin_find_employee_invitation_user(uuid) to service_role;
-grant execute on function public.admin_list_frosttech_employee_management() to authenticated;
-grant execute on function public.admin_list_administrator_accounts() to authenticated;
-grant execute on function public.admin_appoint_departmental_admin(uuid,text) to authenticated;
-grant execute on function public.admin_set_departmental_admin_status(uuid,boolean) to authenticated;
-grant execute on function public.admin_remove_departmental_admin(uuid) to authenticated;
-grant execute on function public.admin_list_activity_log(integer,integer) to authenticated;
-
-commit;
-
--- TEST EDGE-FUNCTION DEPENDENCY (NOT DEPLOYED BY THIS SQL):
--- The production invite-frosttech-employee Edge Function must NOT be copied unchanged.
--- Its CORS allow-origin and invitation redirect currently point to the production GitHub Pages
--- host. A test-only variant must use the isolated preview host and test Supabase secrets.
--- The production source also currently sets frosttech_account_type but does not set the
--- frosttech_employee_id app-metadata marker required by admin_complete_employee_invitation,
--- nor the raw-user-metadata marker used by admin_find_employee_invitation_user.
--- The test-only function must set raw user metadata {account_type:'employee',
--- frosttech_employee_id:<employee UUID>} at invite creation and app metadata
--- {frosttech_account_type:'employee', frosttech_employee_id:<employee UUID>} before
--- calling admin_complete_employee_invitation. Do not deploy or send invitations until
--- this isolated function has been separately reviewed and explicitly approved.
 
 
 -- 1A. Data integrity rules mirrored from the reviewed employee workflow.
@@ -601,8 +562,42 @@ end;
 $function$;
 
 
--- RPC execution grants: employee lifecycle actions are restricted by role inside each function.
+-- Explicit RPC grants. Functions verify Super Administrator identity internally.
+revoke all on function public.admin_create_frosttech_employee(text,text,text,text) from public, anon;
+revoke all on function public.admin_activate_frosttech_employee(uuid) from public, anon;
+revoke all on function public.employee_complete_frosttech_account_setup() from public, anon;
+revoke all on function public.admin_list_frosttech_employee_management() from public, anon;
+revoke all on function public.admin_list_administrator_accounts() from public, anon;
+revoke all on function public.admin_appoint_departmental_admin(uuid,text) from public, anon;
+revoke all on function public.admin_set_departmental_admin_status(uuid,boolean) from public, anon;
+revoke all on function public.admin_remove_departmental_admin(uuid) from public, anon;
+revoke all on function public.admin_list_activity_log(integer,integer) from public, anon;
+revoke all on function public.admin_complete_employee_invitation(uuid,uuid,uuid) from public, anon, authenticated;
+revoke all on function public.admin_find_employee_invitation_user(uuid) from public, anon, authenticated;
 
+grant execute on function public.admin_create_frosttech_employee(text,text,text,text) to authenticated;
+grant execute on function public.admin_activate_frosttech_employee(uuid) to authenticated;
+grant execute on function public.employee_complete_frosttech_account_setup() to authenticated;
+grant execute on function public.admin_list_frosttech_employee_management() to authenticated;
+grant execute on function public.admin_list_administrator_accounts() to authenticated;
+grant execute on function public.admin_appoint_departmental_admin(uuid,text) to authenticated;
+grant execute on function public.admin_set_departmental_admin_status(uuid,boolean) to authenticated;
+grant execute on function public.admin_remove_departmental_admin(uuid) to authenticated;
+grant execute on function public.admin_list_activity_log(integer,integer) to authenticated;
+grant execute on function public.admin_complete_employee_invitation(uuid,uuid,uuid) to service_role;
+grant execute on function public.admin_find_employee_invitation_user(uuid) to service_role;
+
+commit;
+
+-- TEST EDGE-FUNCTION DEPENDENCY (NOT DEPLOYED BY THIS SQL):
+-- A test-only invitation function source is staged separately in this repository.
+-- It uses the test preview host and test Supabase environment variables, not production.
+-- Before deployment, add the test redirect URL to the test project's Auth redirect allow-list.
+-- It writes the employee UUID to raw user metadata and protected app metadata so that
+-- admin_complete_employee_invitation and admin_find_employee_invitation_user agree.
+-- Do not deploy the Edge Function or send invitations without separate explicit approval.
+
+-- PRE-EXECUTION REVIEW CHECKLIST
 -- [ ] Confirm is_super_admin() and admin_accounts protection in test.
 -- [ ] Confirm audit table is append-only and direct client mutation remains denied.
 -- [ ] Confirm employee table has no direct anon/authenticated read/write policies.
