@@ -299,6 +299,9 @@ end;
 $function$;
 
 -- Explicit authenticated execution only; each function independently verifies Super Admin.
+revoke all on function public.admin_create_frosttech_employee(text,text,text,text) from public, anon;
+revoke all on function public.admin_activate_frosttech_employee(uuid) from public, anon;
+revoke all on function public.employee_complete_frosttech_account_setup() from public, anon;
 revoke all on function public.admin_list_frosttech_employee_management() from public, anon;
 revoke all on function public.admin_list_administrator_accounts() from public, anon;
 revoke all on function public.admin_appoint_departmental_admin(uuid,text) from public, anon;
@@ -306,6 +309,13 @@ revoke all on function public.admin_set_departmental_admin_status(uuid,boolean) 
 revoke all on function public.admin_remove_departmental_admin(uuid) from public, anon;
 revoke all on function public.admin_list_activity_log(integer,integer) from public, anon;
 
+grant execute on function public.admin_create_frosttech_employee(text,text,text,text) to authenticated;
+grant execute on function public.admin_activate_frosttech_employee(uuid) to authenticated;
+grant execute on function public.employee_complete_frosttech_account_setup() to authenticated;
+revoke all on function public.admin_complete_employee_invitation(uuid,uuid,uuid) from public, anon, authenticated;
+revoke all on function public.admin_find_employee_invitation_user(uuid) from public, anon, authenticated;
+grant execute on function public.admin_complete_employee_invitation(uuid,uuid,uuid) to service_role;
+grant execute on function public.admin_find_employee_invitation_user(uuid) to service_role;
 grant execute on function public.admin_list_frosttech_employee_management() to authenticated;
 grant execute on function public.admin_list_administrator_accounts() to authenticated;
 grant execute on function public.admin_appoint_departmental_admin(uuid,text) to authenticated;
@@ -315,7 +325,281 @@ grant execute on function public.admin_list_activity_log(integer,integer) to aut
 
 commit;
 
--- PRE-EXECUTION REVIEW CHECKLIST
+-- TEST EDGE-FUNCTION DEPENDENCY (NOT DEPLOYED BY THIS SQL):
+-- The production invite-frosttech-employee Edge Function must NOT be copied unchanged.
+-- Its CORS allow-origin and invitation redirect currently point to the production GitHub Pages
+-- host. A test-only variant must use the isolated preview host and test Supabase secrets.
+-- The production source also currently sets frosttech_account_type but does not set the
+-- frosttech_employee_id app-metadata marker required by admin_complete_employee_invitation,
+-- nor the raw-user-metadata marker used by admin_find_employee_invitation_user.
+-- The test-only function must set raw user metadata {account_type:'employee',
+-- frosttech_employee_id:<employee UUID>} at invite creation and app metadata
+-- {frosttech_account_type:'employee', frosttech_employee_id:<employee UUID>} before
+-- calling admin_complete_employee_invitation. Do not deploy or send invitations until
+-- this isolated function has been separately reviewed and explicitly approved.
+
+
+-- 1A. Data integrity rules mirrored from the reviewed employee workflow.
+create unique index if not exists frosttech_employees_email_lower_uidx
+  on public.frosttech_employees (lower(email));
+
+do $constraints$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.frosttech_employees'::regclass
+      and conname = 'frosttech_employees_department_check'
+  ) then
+    alter table public.frosttech_employees
+      add constraint frosttech_employees_department_check
+      check (department in ('operations','supplier_management','finance','catalogue'));
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.frosttech_employees'::regclass
+      and conname = 'frosttech_employees_status_check'
+  ) then
+    alter table public.frosttech_employees
+      add constraint frosttech_employees_status_check
+      check (employment_status in ('planned','invited','active'));
+  end if;
+end;
+$constraints$;
+
+-- 1B. Create an employee record only; this never creates an auth account or appointment.
+create or replace function public.admin_create_frosttech_employee(
+  p_full_name text, p_email text, p_job_title text, p_department text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_employee_id uuid;
+  v_email text;
+  v_department text;
+begin
+  if auth.uid() is null or not public.is_super_admin() then
+    raise exception 'Access denied. Super Administrator only.';
+  end if;
+  if p_full_name is null or pg_catalog.btrim(p_full_name) = '' then
+    raise exception 'Employee full name is required.';
+  end if;
+  if p_email is null or pg_catalog.btrim(p_email) = '' then
+    raise exception 'Employee email address is required.';
+  end if;
+
+  v_email := pg_catalog.lower(pg_catalog.btrim(p_email));
+  v_department := pg_catalog.lower(pg_catalog.btrim(p_department));
+
+  if v_email !~ '^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+
+-- [ ] Build and review an isolated invite-frosttech-employee Edge Function variant.
+-- [ ] Verify its CORS/redirect use the isolated preview URL, not production.
+-- [ ] Verify employee ID metadata markers match both service RPCs.
+-- [ ] Test employee invitation, email verification, account setup and activation in isolation.
+-- [ ] Confirm is_super_admin() and admin_accounts protection in test.
+-- [ ] Confirm audit table is append-only and direct client mutation remains denied.
+-- [ ] Confirm employee table has no direct anon/authenticated read/write policies.
+-- [ ] Confirm function owners can read auth.users and protected public tables.
+-- [ ] Run static SQL validation and compare RPC return column names with frontend code.
+-- [ ] Apply only to isolated test project after separate explicit approval.
+
+ then
+    raise exception 'Enter a valid employee email address.';
+  end if;
+  if p_job_title is null or pg_catalog.btrim(p_job_title) = '' then
+    raise exception 'Employee job title is required.';
+  end if;
+  if v_department not in ('operations','supplier_management','finance','catalogue') then
+    raise exception 'Invalid FrostTech department.';
+  end if;
+  if exists (select 1 from public.frosttech_employees e where pg_catalog.lower(e.email)=v_email) then
+    raise exception 'An employee record with this email address already exists.';
+  end if;
+  if exists (select 1 from auth.users u where pg_catalog.lower(pg_catalog.btrim(u.email))=v_email) then
+    raise exception 'This email is already registered with FrostTech. Use a separate employee email address.';
+  end if;
+
+  insert into public.frosttech_employees
+    (full_name,email,job_title,department,employment_status,created_by)
+  values
+    (pg_catalog.btrim(p_full_name),v_email,pg_catalog.btrim(p_job_title),v_department,'planned',auth.uid())
+  returning id into v_employee_id;
+
+  insert into public.admin_activity_log(actor_user_id,action,details)
+  values(auth.uid(),'frosttech_employee_record_created',
+    pg_catalog.jsonb_build_object('employee_id',v_employee_id,'email',v_email,'department',v_department));
+  return v_employee_id;
+end;
+$function$;
+
+-- 1C. Service-role-only invitation completion. It verifies the actor and employee marker.
+create or replace function public.admin_complete_employee_invitation(
+  p_employee_id uuid, p_auth_user_id uuid, p_actor_user_id uuid
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_employee record;
+  v_auth_email text;
+  v_account_type text;
+  v_employee_marker text;
+  v_actor_ok boolean;
+begin
+  if auth.role() <> 'service_role' then raise exception 'Access denied'; end if;
+  select exists (
+    select 1 from public.admin_accounts a
+    join public.profiles p on p.id=a.user_id
+    where a.user_id=p_actor_user_id and a.role='super_admin'
+      and a.is_active is true and p.is_active is true
+  ) into v_actor_ok;
+  if not v_actor_ok then raise exception 'Active Super Administrator actor required'; end if;
+
+  select id,full_name,email,department,employment_status,auth_user_id
+  into v_employee
+  from public.frosttech_employees where id=p_employee_id for update;
+  if not found then raise exception 'Employee record not found'; end if;
+
+  select pg_catalog.lower(pg_catalog.btrim(email)),
+         raw_app_meta_data ->> 'frosttech_account_type',
+         raw_app_meta_data ->> 'frosttech_employee_id'
+  into v_auth_email,v_account_type,v_employee_marker
+  from auth.users where id=p_auth_user_id;
+  if not found then raise exception 'Authentication account not found'; end if;
+  if v_auth_email <> pg_catalog.lower(pg_catalog.btrim(v_employee.email)) then
+    raise exception 'Employee email does not match authentication account';
+  end if;
+  if v_account_type <> 'employee' or v_employee_marker <> p_employee_id::text then
+    raise exception 'Authentication account is not securely marked for this employee';
+  end if;
+
+  if v_employee.auth_user_id=p_auth_user_id and v_employee.employment_status in ('invited','active') then
+    if not exists(select 1 from public.profiles where id=p_auth_user_id and role='employee') then
+      raise exception 'Linked employee profile is missing or inconsistent; manual review required';
+    end if;
+    return true;
+  end if;
+  if v_employee.employment_status <> 'planned' or v_employee.auth_user_id is not null then
+    raise exception 'Employee record is already linked to another account or is not eligible';
+  end if;
+
+  insert into public.profiles(id,full_name,phone,role,is_active)
+  values(p_auth_user_id,v_employee.full_name,null,'employee',true)
+  on conflict(id) do nothing;
+  if not exists(select 1 from public.profiles where id=p_auth_user_id and role='employee') then
+    raise exception 'Existing profile is not an employee profile; manual review required';
+  end if;
+
+  update public.frosttech_employees
+  set auth_user_id=p_auth_user_id,employment_status='invited',updated_at=now()
+  where id=p_employee_id;
+
+  insert into public.admin_activity_log(actor_user_id,action,target_user_id,details)
+  values(p_actor_user_id,'frosttech_employee_invited',p_auth_user_id,
+    pg_catalog.jsonb_build_object('employee_id',p_employee_id,'department',v_employee.department,
+      'email',v_employee.email,'recovery_safe_linking',true));
+  return true;
+end;
+$function$;
+
+-- 1D. Service-role-only lookup for invitation recovery; no arbitrary auth-user search is exposed.
+create or replace function public.admin_find_employee_invitation_user(p_employee_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare v_email text; v_user_id uuid;
+begin
+  if auth.role() <> 'service_role' then raise exception 'Access denied'; end if;
+  select pg_catalog.lower(pg_catalog.btrim(email)) into v_email
+  from public.frosttech_employees
+  where id=p_employee_id and employment_status='planned' and auth_user_id is null;
+  if not found then raise exception 'Employee is not awaiting invitation recovery'; end if;
+  select id into v_user_id from auth.users
+  where pg_catalog.lower(pg_catalog.btrim(email))=v_email
+    and raw_user_meta_data ->> 'frosttech_employee_id'=p_employee_id::text
+    and raw_user_meta_data ->> 'account_type'='employee'
+  order by created_at desc limit 1;
+  return v_user_id;
+end;
+$function$;
+
+-- 1E. Employee self-service completion; verified account must match the linked invitation.
+create or replace function public.employee_complete_frosttech_account_setup()
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare v_user_id uuid; v_email text; v_account_type text;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then raise exception 'Authentication required'; end if;
+
+  select pg_catalog.lower(pg_catalog.btrim(email)),
+         raw_app_meta_data ->> 'frosttech_account_type'
+  into v_email,v_account_type
+  from auth.users where id=v_user_id and email_confirmed_at is not null;
+  if not found or v_account_type <> 'employee' then
+    raise exception 'Verified FrostTech employee account required';
+  end if;
+
+  update public.frosttech_employees
+  set account_setup_completed_at=coalesce(account_setup_completed_at,now()),updated_at=now()
+  where auth_user_id=v_user_id and pg_catalog.lower(pg_catalog.btrim(email))=v_email
+    and employment_status='invited';
+  if not found then
+    if exists(select 1 from public.frosttech_employees
+      where auth_user_id=v_user_id and account_setup_completed_at is not null) then
+      return true;
+    end if;
+    raise exception 'Matching invited employee record not found';
+  end if;
+
+  insert into public.admin_activity_log(actor_user_id,action,target_user_id,details)
+  values(v_user_id,'frosttech_employee_account_setup_completed',v_user_id,
+    pg_catalog.jsonb_build_object('email',v_email));
+  return true;
+end;
+$function$;
+
+-- 1F. Employment activation is separate from departmental administrator appointment.
+create or replace function public.admin_activate_frosttech_employee(p_employee_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare v_employee record;
+begin
+  if auth.uid() is null or not public.is_super_admin() then
+    raise exception 'Super Administrator access required';
+  end if;
+  select id,full_name,email,department,auth_user_id,employment_status,account_setup_completed_at
+  into v_employee from public.frosttech_employees where id=p_employee_id for update;
+  if not found then raise exception 'Employee record not found'; end if;
+  if v_employee.employment_status <> 'invited' or v_employee.auth_user_id is null
+     or v_employee.account_setup_completed_at is null then
+    raise exception 'Employee must complete account setup before activation';
+  end if;
+  update public.frosttech_employees set employment_status='active',updated_at=now()
+  where id=p_employee_id;
+  insert into public.admin_activity_log(actor_user_id,action,target_user_id,details)
+  values(auth.uid(),'frosttech_employee_activated',v_employee.auth_user_id,
+    pg_catalog.jsonb_build_object('employee_id',p_employee_id,'department',v_employee.department,'email',v_employee.email));
+  return true;
+end;
+$function$;
+
+
+-- RPC execution grants: employee lifecycle actions are restricted by role inside each function.
+
 -- [ ] Confirm employee onboarding/account provisioning workflow exists in test and creates
 --     profiles.role='employee', auth.users app_metadata frosttech_account_type='employee',
 --     verified email, and account_setup_completed_at.
