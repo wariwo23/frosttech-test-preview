@@ -146,6 +146,7 @@ async function initialise(){
   $("confirmBankCredit").disabled=!quotationPermissions.verifyPayments;
   $("retryPasswordEmail").classList.toggle("hidden",!quotationPermissions.verifyPayments);
   $("sendBankInstructions").disabled=!quotationPermissions.prepare;
+  $("refreshBankStatus").disabled=!quotationPermissions.readPayments;
   $("generateSimulatedBankCredit").disabled=!(quotationPermissions.prepare||quotationPermissions.verifyPayments);
   if(!quotationPermissions.verifyPayments)$("bankConfirmationForm").querySelector("h3").textContent="Payment verification permission is required to confirm bank credit or release the PDF password.";
   if(quotationPermissions.prepare){
@@ -339,7 +340,7 @@ $("sendBankInstructions").addEventListener("click",async()=>{
   const {data,error}=await db.functions.invoke("direct-quotation-bank-workflow",{body:{action:"send_instructions"}});
   if(error||!data?.success)throw new Error(data?.error||error?.message||"Bank instructions email failed.");
   show("Bank instructions and protected PDF accepted by Resend for "+data.recipient+". Check the internal test inbox; provider acceptance is not proof of inbox delivery.","success","bankWorkflowStatus");
-  await refreshBankStatus();
+  if(quotationPermissions.readPayments)await refreshBankStatus();
  }catch(e){$("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent=e.message||"Could not send bank instructions.";}
  finally{b.disabled=false;b.textContent="Send bank instructions and protected PDF";}
 });
