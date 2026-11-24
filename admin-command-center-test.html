@@ -13,7 +13,7 @@ header{background:linear-gradient(115deg,#062746,#0b4778);color:#fff;padding:18p
 .topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px}.identity{font-size:13px;color:#e4f2fc}.top-actions{display:flex;gap:8px;flex-wrap:wrap}
 button,a.btn{border:0;border-radius:8px;padding:10px 13px;font:700 13px Arial;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .btn-light{background:#fff;color:var(--navy)}.btn-outline{background:transparent;border:1px solid #9fc7e5;color:#fff}
-.layout{max-width:1280px;margin:20px auto;padding:0 16px 42px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px}
+.layout{max-width:1280px;margin:20px auto;padding:0 16px 42px;display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px}.layout.department-mode{grid-template-columns:minmax(0,1fr)}.layout.department-mode .sidebar{display:none}
 .sidebar,.panel,.module{background:var(--white);border:1px solid var(--line);border-radius:13px;box-shadow:0 2px 7px #102b4e08}
 .sidebar{padding:13px;align-self:start;position:sticky;top:12px}.nav-title{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;padding:9px 10px}
 .nav-home,.nav-toggle,.nav-link{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:transparent;color:var(--ink);padding:11px 10px;border-radius:8px;font-size:14px;font-weight:600}
@@ -35,7 +35,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
  <div class="brand"><div class="mark" aria-hidden="true">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Administration Command Center · Isolated Test Environment</p></div></div>
  <div class="topline"><div class="identity" id="identity">Verifying administrator access…</div><div class="top-actions"><button class="btn-outline" id="refreshBtn" type="button">Refresh Access</button><button class="btn-light" id="signOutBtn" type="button">Sign Out</button></div></div>
 </header>
-<div class="layout">
+<div class="layout" id="pageLayout">
 <aside class="sidebar" aria-label="Command Center navigation">
  <div class="nav-title">Command Center</div>
  <nav id="navigation">
@@ -63,8 +63,8 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
   <article class="module"><div class="module-top"><div class="module-icon">✉</div><h4>Communications</h4></div><p class="desc">Notification events, email delivery monitoring, idempotency and controlled recovery.</p><div class="module-foot"><span class="status">Existing Super Admin workflow</span><button class="open" data-open="communications" type="button">View details</button></div></article>
   <article class="module"><div class="module-top"><div class="module-icon">⚿</div><h4>Security & System Administration</h4></div><p class="desc">Employee onboarding, operator appointments, department access, permission governance and audit logs.</p><div class="module-foot"><span class="status">Existing protected workspace</span><button class="open" data-open="security" type="button">View details</button></div></article>
  </section>
- <section class="panel detail hidden" id="departmentPanel" aria-live="polite"><div class="eyebrow">Department workspace</div><h3 id="departmentTitle">Department</h3><p id="departmentDescription"></p><div class="notice">Choose an authorised function below. Each function retains its own permission checks and protected workspace.</div><div class="department-grid" id="departmentFunctions"></div><p style="margin-top:16px"><button class="open" id="departmentHome" type="button">← Return to Command Center Overview</button></p></section>
- <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><div id="detailLinks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
+ <section class="panel detail hidden" id="departmentPanel" aria-live="polite"><div class="eyebrow">Department workspace</div><h3 id="departmentTitle">Department</h3><p id="departmentDescription"></p><div class="notice">Choose an authorised function below. Each function retains its own permission checks and protected workspace.</div><div class="department-grid" id="departmentFunctions"></div><p style="margin-top:16px"><button class="open" id="departmentHome" type="button">← Return to Command Center</button></p></section>
+ <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><div id="detailLinks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">← Back to Department</button><button class="open" id="detailHome" type="button">← Return to Command Center</button></p></section>
 </main>
 </div>
 <footer>FrostTech Administration Command Center · Isolated Test Environment. No production data or settings are changed by this page.</footer>
@@ -75,7 +75,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
 "use strict";
 const db=window.supabaseClient;
 const $=id=>document.getElementById(id);
-let currentRole=null,permissions=new Set(),isSuper=false;
+let currentRole=null,permissions=new Set(),isSuper=false,currentDetailKey=null;
 const modules={
 operations:{group:"operations",permission:"orders.manage",title:"Operations",text:"Customer requests, quotations, orders and delivery coordination. Open the protected isolated-test Operations workspace to access the verified departmental workflows."},
 quotations:{group:"operations",permission:["quotations.read_operational","quotations.read_financial"],title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
@@ -111,16 +111,16 @@ function clearNavigationActive(){document.querySelectorAll("[data-page]").forEac
 function departmentAllowed(group){return isSuper||Object.keys(modules).some(key=>modules[key].group===group&&allowed(key));}
 function showDepartment(group){
  const info={operations:["Operations","Customer requests, quotations, order handling and delivery coordination."],supplier:["Supplier Management","Supplier applications, verification, quotations and supplier account administration."],finance:["Finance & Payments","Financial reporting, payment reconciliation and supplier settlement controls."],tax:["Tax Administration","Tax rules, assessments, withholding, remittances and supplier tax documentation."],catalogue:["Catalogue","Product listings, catalogue content, selling prices, stock and restricted supplier-cost controls."],customers:["Customers & Advertisers","Customer account oversight, advertiser verification, CAC documentation and campaign administration."],communications:["Communications","Notification monitoring, email delivery status, communication records and controlled recovery."],security:["Security & System Administration","Employee onboarding, operator assignments, permission governance and administrative audit oversight."]}[group];
- if(!info)return;$("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.add("hidden");$("departmentPanel").classList.remove("hidden");$("contentTitle").textContent=info[0];setStatus("Department landing page · access verified against your assigned permissions.");$("departmentTitle").textContent=info[0];$("departmentDescription").textContent=info[1];
+ if(!info)return;$("pageLayout").classList.add("department-mode");$("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.add("hidden");$("departmentPanel").classList.remove("hidden");$("contentTitle").textContent=info[0];setStatus("Department landing page · access verified against your assigned permissions.");$("departmentTitle").textContent=info[0];$("departmentDescription").textContent=info[1];
  const grid=$("departmentFunctions");grid.replaceChildren();const sub=document.querySelectorAll("[data-sub]");let keys=[];sub.forEach(s=>{if(s.dataset.sub===group)keys=[...s.querySelectorAll("[data-page]")].map(x=>x.dataset.page).filter(k=>modules[k]&&allowed(k));});
  keys.forEach(key=>{const m=modules[key],card=document.createElement("article"),h=document.createElement("h4"),p=document.createElement("p"),button=document.createElement("button");card.className="department-card";h.textContent=m.title;p.textContent=m.text;button.type="button";button.textContent="Open function";button.addEventListener("click",()=>showDetail(key));card.append(h,p,button);grid.append(card);});clearNavigationActive();document.querySelectorAll("[data-sub]").forEach(s=>{const open=s.dataset.sub===group;s.classList.toggle("hidden",!open);document.querySelectorAll("[data-group]").forEach(b=>{if(b.dataset.group===s.dataset.sub){b.setAttribute("aria-expanded",String(open));if(open)b.classList.add("active");}});});
 }
 function showDetail(key){
  const m=modules[key];if(!m)return;
- $("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("detailPanel").classList.remove("hidden");
+ currentDetailKey=key;$("pageLayout").classList.add("department-mode");$("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("detailPanel").classList.remove("hidden");
  $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
  $("detailDepartment").textContent=m.group.replaceAll("-"," ");
- $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
+ $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;$("detailBack").textContent="← Back to "+({operations:"Operations",supplier:"Supplier Management",finance:"Finance & Payments",tax:"Tax Administration",catalogue:"Catalogue",customers:"Customers & Advertisers",communications:"Communications",security:"Security & System Administration"}[m.group]||"Department");
  const authorised=allowed(key);
  $("detailNotice").textContent=authorised?"Your account is authorised to view this department entry. Open the relevant protected workspace below. Existing server-side access checks remain in force.":"This department is not included in your current permissions. Contact the Super Administrator if your duties require access.";
  const links=$("detailLinks");links.replaceChildren();
@@ -151,7 +151,7 @@ function showDetail(key){
  }
 }
 function showHome(){
- $("detailPanel").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");clearNavigationActive();document.querySelectorAll("[data-page]").forEach(x=>{if(x.dataset.page==="home")x.classList.add("active");});
+ $("pageLayout").classList.remove("department-mode");$("detailPanel").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");clearNavigationActive();document.querySelectorAll("[data-page]").forEach(x=>{if(x.dataset.page==="home")x.classList.add("active");});
  $("contentTitle").textContent="Department workspaces";setStatus("Access is checked against the isolated test database.");
 }
 async function checkAccess(){
@@ -187,7 +187,8 @@ $("navigation").addEventListener("click",e=>{
  const page=e.target.closest("[data-page]");if(page){if(page.dataset.page==="home"){showHome();return;}if(!page.disabled)showDetail(page.dataset.page);}
 });
 document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>{const key=b.dataset.open;if(departmentAllowed(key))showDepartment(key);else if(modules[key]&&allowed(key))showDetail(key);}));
-$("detailBack").addEventListener("click",()=>{let active=null;document.querySelectorAll("[data-group]").forEach(x=>{if(x.classList.contains("active"))active=x;});if(active)showDepartment(active.dataset.group);else showHome();});
+$("detailBack").addEventListener("click",()=>{if(currentDetailKey&&modules[currentDetailKey])showDepartment(modules[currentDetailKey].group);else showHome();});
+$("detailHome").addEventListener("click",showHome);
 $("departmentHome").addEventListener("click",showHome);
 $("refreshBtn").addEventListener("click",async()=>{try{await checkAccess();}catch(e){setStatus(e.message);}});
 $("signOutBtn").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){setStatus(error.message);return;}location.replace("test-admin-login.html");});
