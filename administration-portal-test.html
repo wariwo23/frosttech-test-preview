@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#082f55">
+<title>FrostTech Administration Portal — TEST</title>
+<style>
+:root{--navy:#082f55;--blue:#147fbd;--ice:#eaf5fc;--ink:#172b40;--muted:#64778b;--line:#dce7f0;--bg:#f3f7fb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,sans-serif}
+header{background:linear-gradient(115deg,#062746,#0b4778);color:white;padding:22px 16px;border-bottom:4px solid #55b9ed}
+.brand{max-width:980px;margin:auto;display:flex;align-items:center;gap:13px}.mark{width:46px;height:46px;border-radius:12px;background:white;color:var(--navy);display:grid;place-items:center;font-weight:900;font-size:19px}.brand h1{font-size:21px;margin:0}.brand p{font-size:12px;color:#d8eafa;margin:4px 0 0}
+main{max-width:980px;margin:34px auto;padding:0 16px 38px}.intro{text-align:center;margin-bottom:24px}.intro h2{font-size:25px;margin:0 0 7px}.intro p{color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{background:white;border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 3px 12px #102b4e08}.icon{width:44px;height:44px;border-radius:11px;background:var(--ice);display:grid;place-items:center;font-size:21px;color:var(--navy)}.card h3{margin:13px 0 6px;font-size:18px}.card p{color:var(--muted);font-size:13px;min-height:55px;margin:0 0 16px}.card a{display:flex;justify-content:center;align-items:center;text-decoration:none;background:var(--navy);color:white;border-radius:8px;padding:12px;font-weight:700;font-size:14px}.note{margin-top:18px;padding:13px 15px;background:#fff8e7;border:1px solid #f0dca7;border-radius:9px;color:#765500;font-size:13px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:0 16px 25px}
+@media(max-width:620px){header{padding:18px 14px}.brand h1{font-size:18px}main{margin:22px auto;padding:0 12px 28px}.grid{grid-template-columns:1fr}.card{padding:18px}.card p{min-height:0}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark" aria-hidden="true">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Administration Portal · Isolated Test Environment</p></div></div></header>
+<main>
+<section class="intro"><h2>Administration Sign-in</h2><p>Select the administrative sign-in route assigned to your office.</p></section>
+<section class="grid" aria-label="Independent administrator sign-in routes">
+<article class="card"><div class="icon" aria-hidden="true">♛</div><h3>Super Administrator</h3><p>Sign in to the central Command Center with complete marketplace oversight and access to all four departments.</p><a href="test-admin-login.html?access=super">Super Administrator Sign In</a></article>
+<article class="card"><div class="icon" aria-hidden="true">▦</div><h3>Departmental Administrator</h3><p>Sign in directly to the mini Command Center assigned to your departmental administrator account.</p><a href="test-admin-login.html?access=department">Departmental Administrator Sign In</a></article>
+</section>
+<div class="note"><strong>Security notice:</strong> Your actual department is determined by the authenticated FrostTech administrator record. Choosing a sign-in route does not grant a role or permission. Department appointments remain subject to the existing Super Administrator controls and launch hold.</div>
+</main>
+<footer>FrostTech Administration · Test only · Production remains separate</footer>
+</body></html>
