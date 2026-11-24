@@ -269,4 +269,14 @@ These are not deleted or delegated. No fake or unverified action controls were a
 
 This checkpoint has passed source/static inspection only. It has **not** yet passed live browser sign-in, mobile layout, or end-to-end navigation tests. The pending workspaces above must be ported and permission-tested before the architecture can be considered complete or ready for production consideration.
 
-Latest implementation commit at this checkpoint: `a6ec51b8d75255f53316d6ff1a6568343cf8ac42`.
+Latest implementation commit before the return-navigation and final static-check updates: `c1bff25257ccd813afb2bd48300be1f981e80cf5`.
+
+
+### Return-navigation and final static-check addendum
+
+- Added return-to-department links from Operations, Supplier, Finance, Tax and independent quotation workspaces to the correct departmental mini Command Center.
+- Added return-to-Super-Administrator-Command-Center links from employee onboarding, department/operator management, administrator audit and Super Administrator-only supplier settlement review.
+- Re-fetched 14 affected/new test pages after the updates.
+- Static verification found exactly four top-level department cards in the Super Administrator center, all four existing department roles mapped in the mini shell, separate sign-in mode checks in the login route, and role-based redirect from the legacy Command Center.
+- The fetched test pages contained no production Supabase project reference and no service-role key.
+- These checks do not replace live browser/mobile verification or direct RPC negative-access testing.
