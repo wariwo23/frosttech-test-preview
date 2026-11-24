@@ -17,6 +17,18 @@ button.primary,.btn{background:var(--navy);color:white}button.secondary{backgrou
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted);font-weight:700}.field textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--line);border-radius:8px;font:14px Arial}
 .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.kv div{padding:9px;background:#f5f8fb;border-radius:7px}.kv span{display:block;color:var(--muted);font-size:11px}.kv strong{font-size:14px}
 .hidden{display:none!important}
+.ft-confirm-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.6)}
+.ft-confirm-box{width:100%;max-width:420px;max-height:90vh;overflow:auto;padding:23px;border-radius:14px;background:#fff;box-shadow:0 10px 35px rgba(0,0,0,.3);text-align:center}
+.ft-confirm-title{margin:0 0 18px;color:var(--navy);font-size:18px;line-height:1.4}
+.ft-confirm-question{margin:0 0 12px;color:#222;font-size:18px;font-weight:800}
+.ft-confirm-details{margin:0 0 22px;color:#555;font-size:14px}
+.ft-confirm-reason{display:block;width:100%;min-height:105px;margin:12px 0 6px;padding:11px;border:1px solid var(--line);border-radius:8px;font:14px Arial;resize:vertical}
+.ft-confirm-error{min-height:20px;margin:0 0 10px;color:var(--red);font-size:12px;text-align:left}
+.ft-confirm-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.ft-confirm-actions button{flex:1 1 140px;justify-content:center}
+.ft-confirm-cancel{background:#eee;color:#222;border:1px solid #ccc}
+.ft-confirm-ok{background:var(--navy);color:#fff}
+body.ft-modal-open{overflow:hidden}
 @media(max-width:600px){.grid,.kv{grid-template-columns:1fr}main{padding:0 10px 30px}.panel,.record{padding:14px}}
 </style>
 </head>
@@ -45,7 +57,31 @@ const naira=v=>v==null?"—":"₦"+Number(v).toLocaleString("en-NG",{minimumFrac
 const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
 let currentUser=null;
 function status(message,kind=""){const el=$("status");el.textContent=message;el.className="message "+kind;}
-function confirmAction(message){return window.confirm(message);}
+function settlementConfirmation({question,details,confirmLabel,danger=false,requireReason=false}){
+ return new Promise(resolve=>{
+  const overlay=document.createElement("div");overlay.className="ft-confirm-overlay";
+  const box=document.createElement("div");box.className="ft-confirm-box";box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");
+  const title=node("h3","ft-confirm-title","FrostTech HVAC and Refrigeration Marketplace");
+  const prompt=node("p","ft-confirm-question",question);box.append(title,prompt);
+  if(details)box.append(node("p","ft-confirm-details",details));
+  let reason=null,errorText=null;
+  if(requireReason){reason=document.createElement("textarea");reason.className="ft-confirm-reason";reason.rows=4;reason.maxLength=2000;reason.placeholder="Enter the reason for rejecting this settlement (at least 5 characters).";reason.setAttribute("aria-label","Reason for rejection");errorText=node("p","ft-confirm-error","");box.append(reason,errorText);}
+  const actions=node("div","ft-confirm-actions");
+  const cancel=node("button","ft-confirm-cancel","Cancel");cancel.type="button";
+  const confirm=node("button",danger?"danger":"ft-confirm-ok",confirmLabel);confirm.type="button";
+  let finished=false;
+  const finish=value=>{if(finished)return;finished=true;document.removeEventListener("keydown",onKey);overlay.remove();document.body.classList.remove("ft-modal-open");resolve(value);};
+  const onKey=e=>{if(e.key==="Escape"){e.preventDefault();finish(null);}};
+  cancel.addEventListener("click",()=>finish(null));
+  confirm.addEventListener("click",()=>{
+   if(requireReason&&reason.value.trim().length<5){errorText.textContent="Please enter a rejection reason of at least 5 characters.";reason.focus();return;}
+   finish(requireReason?reason.value.trim():true);
+  });
+  overlay.addEventListener("click",e=>{if(e.target===overlay)finish(null);});
+  actions.append(cancel,confirm);box.append(actions);overlay.append(box);document.body.append(overlay);document.body.classList.add("ft-modal-open");document.addEventListener("keydown",onKey);
+  if(reason)reason.focus();else cancel.focus();
+ });
+}
 async function initialise(){
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;
  if(!session?.user){location.replace("test-admin-login.html?return=supplier-settlements-admin-test.html");return;}
@@ -75,17 +111,17 @@ async function loadSettlements(){
    const reject=node("button","danger","Reject Settlement");
    approve.disabled=s.prepared_by===currentUser.id;
    approve.onclick=async()=>{
-    if(!confirmAction("Approve "+(s.settlement_number||s.id)+"? This records approval only. It does not transfer money."))return;
+    const confirmed=await settlementConfirmation({question:"Approve supplier settlement?",details:"Settlement: "+(s.settlement_number||s.id)+" · Net payable: "+naira(s.net_payable)+". Approval records authorisation only; it does not transfer money.",confirmLabel:"Yes, Approve Settlement"});
+    if(!confirmed)return;
     approve.disabled=true;reject.disabled=true;status("Submitting approval to the secure database function…");
     try{const {data,error}=await db.rpc("frosttech_approve_supplier_settlement",{p_settlement_id:s.id});if(error)throw error;status("Settlement approved successfully. No payment was made. Record: "+data,"success");await loadSettlements();}
     catch(e){status(e.message||"Approval failed.","error");approve.disabled=false;reject.disabled=false;}
    };
    reject.onclick=async()=>{
-    const reason=window.prompt("Enter the reason for rejecting this settlement (at least 5 characters):");
-    if(reason===null)return;if(reason.trim().length<5){status("A rejection reason of at least five characters is required.","error");return;}
-    if(!confirmAction("Reject "+(s.settlement_number||s.id)+"? This records the rejection and reason. No payment is made."))return;
+    const reason=await settlementConfirmation({question:"Reject supplier settlement?",details:"Settlement: "+(s.settlement_number||s.id)+". This records the rejection and reason; no payment is made.",confirmLabel:"Yes, Reject Settlement",danger:true,requireReason:true});
+    if(reason===null)return;
     approve.disabled=true;reject.disabled=true;status("Submitting rejection to the secure database function…");
-    try{const {data,error}=await db.rpc("frosttech_reject_supplier_settlement",{p_settlement_id:s.id,p_reason:reason.trim()});if(error)throw error;status("Settlement rejected and reason recorded. No payment was made. Record: "+data,"success");await loadSettlements();}
+    try{const {data,error}=await db.rpc("frosttech_reject_supplier_settlement",{p_settlement_id:s.id,p_reason:reason});if(error)throw error;status("Settlement rejected and reason recorded. No payment was made. Record: "+data,"success");await loadSettlements();}
     catch(e){status(e.message||"Rejection failed.","error");approve.disabled=false;reject.disabled=false;}
    };
    actions.append(approve,reject);card.append(actions);$("rows").append(card);
