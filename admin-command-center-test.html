@@ -25,8 +25,9 @@ button,a.btn{border:0;border-radius:8px;padding:10px 13px;font:700 13px Arial;cu
 .detail{padding:22px}.detail h3{margin:0 0 7px;font-size:20px}.detail p{color:var(--muted);margin:0 0 12px}.notice{border:1px solid #f0dca7;background:#fff9e9;border-radius:9px;padding:12px;color:#765500;font-size:13px}
 footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);font-size:12px}
 .hidden{display:none!important}
+.department-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.department-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}.department-card h4{margin:0 0 7px;font-size:15px}.department-card p{margin:0 0 13px;color:var(--muted);font-size:12px;min-height:34px}.department-card button{width:100%;background:var(--navy);color:#fff}.nav-toggle.active{background:var(--ice);color:var(--navy)}
 @media(max-width:820px){.layout{grid-template-columns:1fr}.sidebar{position:static}.sidebar nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.nav-title{grid-column:1/-1}.nav-sub{grid-column:1/-1}.grid{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){header{padding:16px}.brand h1{font-size:17px}.layout{margin:12px auto;padding:0 10px 30px}.sidebar{padding:9px}.sidebar nav{grid-template-columns:1fr}.nav-sub{padding-left:10px}.grid{grid-template-columns:1fr}.welcome{padding:17px}.welcome h2{font-size:21px}.module .desc{min-height:0}}
+@media(max-width:520px){.department-grid{grid-template-columns:1fr}header{padding:16px}.brand h1{font-size:17px}.layout{margin:12px auto;padding:0 10px 30px}.sidebar{padding:9px}.sidebar nav{grid-template-columns:1fr}.nav-sub{padding-left:10px}.grid{grid-template-columns:1fr}.welcome{padding:17px}.welcome h2{font-size:21px}.module .desc{min-height:0}}
 </style>
 </head>
 <body>
@@ -62,6 +63,7 @@ footer{max-width:1280px;margin:0 auto;padding:0 16px 25px;color:var(--muted);fon
   <article class="module"><div class="module-top"><div class="module-icon">✉</div><h4>Communications</h4></div><p class="desc">Notification events, email delivery monitoring, idempotency and controlled recovery.</p><div class="module-foot"><span class="status">Existing Super Admin workflow</span><button class="open" data-open="notifications" type="button">View details</button></div></article>
   <article class="module"><div class="module-top"><div class="module-icon">⚿</div><h4>Security & System Administration</h4></div><p class="desc">Employee onboarding, operator appointments, department access, permission governance and audit logs.</p><div class="module-foot"><span class="status">Existing protected workspace</span><button class="open" data-open="security" type="button">View details</button></div></article>
  </section>
+ <section class="panel detail hidden" id="departmentPanel" aria-live="polite"><div class="eyebrow">Department workspace</div><h3 id="departmentTitle">Department</h3><p id="departmentDescription"></p><div class="notice">Choose an authorised function below. Each function retains its own permission checks and protected workspace.</div><div class="department-grid" id="departmentFunctions"></div><p style="margin-top:16px"><button class="open" id="departmentHome" type="button">← Return to Command Center Overview</button></p></section>
  <section class="panel detail hidden" id="detailPanel" aria-live="polite"><div class="eyebrow" id="detailDepartment">Department</div><h3 id="detailTitle">Workspace</h3><p id="detailText"></p><div class="notice" id="detailNotice"></div><div id="detailLinks" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"></div><p style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><a class="open hidden" id="detailLaunch" href="#" style="color:#fff;text-decoration:none">Open existing protected workspace</a><button class="open" id="detailBack" type="button">Back to overview</button></p></section>
 </main>
 </div>
@@ -105,9 +107,16 @@ function allowed(key){
  const required=Array.isArray(m.permission)?m.permission:[m.permission];
  return required.some(permission=>permissions.has(permission));
 }
+function clearNavigationActive(){document.querySelectorAll("[data-page]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("[data-group]").forEach(x=>x.classList.remove("active"));}
+function showDepartment(group){
+ const info={operations:["Operations","Customer requests, quotations, order handling and delivery coordination."],supplier:["Supplier Management","Supplier applications, verification, quotations and supplier account administration."],finance:["Finance & Payments","Financial reporting, payment reconciliation and supplier settlement controls."],tax:["Tax Administration","Tax rules, assessments, withholding, remittances and supplier tax documentation."],catalogue:["Catalogue","Product listings, catalogue content, selling prices, stock and restricted supplier-cost controls."],customers:["Customers & Advertisers","Customer account oversight, advertiser verification, CAC documentation and campaign administration."],communications:["Communications","Notification monitoring, email delivery status, communication records and controlled recovery."],security:["Security & System Administration","Employee onboarding, operator assignments, permission governance and administrative audit oversight."]}[group];
+ if(!info)return;$("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.add("hidden");$("departmentPanel").classList.remove("hidden");$("contentTitle").textContent=info[0];setStatus("Department landing page · access verified against your assigned permissions.");$("departmentTitle").textContent=info[0];$("departmentDescription").textContent=info[1];
+ const grid=$("departmentFunctions");grid.replaceChildren();const sub=document.querySelectorAll("[data-sub]");let keys=[];sub.forEach(s=>{if(s.dataset.sub===group)keys=[...s.querySelectorAll("[data-page]")].map(x=>x.dataset.page).filter(k=>modules[k]&&allowed(k));});
+ keys.forEach(key=>{const m=modules[key],card=document.createElement("article"),h=document.createElement("h4"),p=document.createElement("p"),button=document.createElement("button");card.className="department-card";h.textContent=m.title;p.textContent=m.text;button.type="button";button.textContent="Open function";button.addEventListener("click",()=>showDetail(key));card.append(h,p,button);grid.append(card);});clearNavigationActive();document.querySelectorAll("[data-group]").forEach(x=>{if(x.dataset.group===group)x.classList.add("active");});
+}
 function showDetail(key){
  const m=modules[key];if(!m)return;
- $("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("detailPanel").classList.remove("hidden");
+ $("homePanel").classList.add("hidden");$("moduleGrid").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("detailPanel").classList.remove("hidden");
  $("contentTitle").textContent=m.title;$("contentSubtitle").textContent="Department workspace access";
  $("detailDepartment").textContent=m.group.replaceAll("-"," ");
  $("detailTitle").textContent=m.title;$("detailText").textContent=m.text;
@@ -141,7 +150,7 @@ function showDetail(key){
  }
 }
 function showHome(){
- $("detailPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");
+ $("detailPanel").classList.add("hidden");$("departmentPanel").classList.add("hidden");$("homePanel").classList.remove("hidden");$("moduleGrid").classList.remove("hidden");clearNavigationActive();document.querySelectorAll("[data-page]").forEach(x=>{if(x.dataset.page==="home")x.classList.add("active");});
  $("contentTitle").textContent="Department workspaces";setStatus("Access is checked against the isolated test database.");
 }
 async function checkAccess(){
@@ -173,11 +182,12 @@ async function checkAccess(){
 }
 $("navigation").addEventListener("click",e=>{
  const toggle=e.target.closest("[data-group]");
- if(toggle){const name=toggle.dataset.group;document.querySelectorAll("[data-sub]").forEach(s=>{const open=s.dataset.sub===name&&s.classList.contains("hidden");s.classList.toggle("hidden",!open);const b=document.querySelector('[data-group="'+s.dataset.sub+'"]');if(b)b.setAttribute("aria-expanded",String(open));});return;}
+ if(toggle){const name=toggle.dataset.group;document.querySelectorAll("[data-sub]").forEach(s=>{const open=s.dataset.sub===name;s.classList.toggle("hidden",!open);document.querySelectorAll("[data-group]").forEach(b=>{if(b.dataset.group===s.dataset.sub)b.setAttribute("aria-expanded",String(open));});});showDepartment(name);return;}
  const page=e.target.closest("[data-page]");if(page){if(page.dataset.page==="home"){showHome();return;}if(!page.disabled)showDetail(page.dataset.page);}
 });
 document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>{if(allowed(b.dataset.open))showDetail(b.dataset.open);}));
-$("detailBack").addEventListener("click",showHome);
+$("detailBack").addEventListener("click",()=>{let active=null;document.querySelectorAll("[data-group]").forEach(x=>{if(x.classList.contains("active"))active=x;});if(active)showDepartment(active.dataset.group);else showHome();});
+$("departmentHome").addEventListener("click",showHome);
 $("refreshBtn").addEventListener("click",async()=>{try{await checkAccess();}catch(e){setStatus(e.message);}});
 $("signOutBtn").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){setStatus(error.message);return;}location.replace("test-admin-login.html");});
 checkAccess().catch(e=>{ $("identity").textContent="Access not verified";$("contentTitle").textContent="Administrator access required";setStatus(e.message||"Unable to verify access.");$("moduleGrid").classList.add("hidden");$("rolePill").textContent="Access denied";$("rolePill").className="pill warn";});
