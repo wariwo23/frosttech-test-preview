@@ -141,11 +141,10 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function fmt(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleString()}
 async function verifyAdmin(user){
  if(!user)return null;
- const {data:profile,error:pe}=await db.from("profiles").select("id,role,is_active").eq("id",user.id).maybeSingle();
- if(pe)throw pe;
- if(!profile||profile.role!=="admin"||profile.is_active!==true)return null;
- const {data:role,error:re}=await db.rpc("admin_get_my_role");
- if(re)throw re;
+ // Central authorisation validates the active profile and permanent or
+ // isolated-test administrator grant; profiles.role is not the permission source.
+ const {data:role,error}=await db.rpc("admin_get_my_role");
+ if(error)throw error;
  return ["super_admin","supplier_admin"].includes(role)?role:null;
 }
 function render(rows){
