@@ -27,22 +27,36 @@ main{max-width:1180px;margin:22px auto;padding:0 16px 40px}.panel,.card{backgrou
 #groupGrid>.card .open{background:#0b4778}
 @media(max-width:620px){#groupGrid>.card{padding:11px}}
 
+
+/* Compact, self-contained responsibility buttons: icon and title only. */
+#groupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(112px,auto));gap:12px}
+#groupGrid>.group-tile{width:100%;min-width:0;min-height:112px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;white-space:normal;background:#f2f8fd;border:1px solid #dceaf5;border-radius:12px;color:var(--navy);box-shadow:0 1px 3px #102b4e0a;transition:background .15s,border-color .15s,transform .15s}
+#groupGrid>.group-tile:hover,#groupGrid>.group-tile:focus-visible{background:#e6f2fb;border-color:#9fc7e5;outline:2px solid #9fc7e5;outline-offset:2px}
+#groupGrid>.group-tile:active{transform:scale(.985)}
+#groupGrid>.group-tile .ico{width:42px;height:42px;min-width:42px;border-radius:11px;background:#e2eff9;font-size:22px}
+#groupGrid>.group-tile .group-title{font-size:14px;font-weight:700;line-height:1.35}
+@media(max-width:620px){
+#groupGrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(104px,auto));gap:9px}
+#groupGrid>.group-tile{min-height:104px;padding:12px 8px;gap:8px}
+#groupGrid>.group-tile .ico{width:36px;height:36px;min-width:36px;font-size:19px}
+#groupGrid>.group-tile .group-title{font-size:12px;line-height:1.3}
+}
+
 </style></head>
 <body>
 <header><div class="head"><div class="brand"><div class="mark">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Super Administrator Command Center · Isolated Test Environment</p></div></div><div class="actions"><button id="refresh" class="outline" type="button">Refresh Access</button><button id="signOut" class="light" type="button">Sign Out</button></div></div></header>
 <main>
 <section class="panel welcome" id="home"><div class="eyebrow">Central marketplace authority</div><h2>Super Administrator Command Center</h2><p>Complete oversight of FrostTech's responsibilities. Select one department or reserved responsibility to open its focused workspace. Departmental responsibilities and reserved Super Administrator powers remain separate.</p><div class="statusbar"><span class="pill good" id="identity">Verifying Super Administrator…</span><span class="pill">TEST ONLY</span><span class="pill">Four departments · one central authority</span></div></section>
 <div id="overview">
-<div class="section-head"><div><h3>Super Administrator Responsibility Groups</h3><p>Choose one group. Its responsibilities open on a separate, focused page.</p></div></div>
-<section class="grid" id="groupGrid">
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">🎧</div><h4>Operations & Customer Matters</h4></div><p>Customer accounts, requests, orders, deliveries, standard quotations and direct quotations.</p><button class="open" data-group="operations">Open group</button></article>
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">📦</div><h4>Supplier & Catalogue Management</h4></div><p>Supplier applications, supplier quotations, supplier accounts, products, stock, pricing and restricted supplier costs.</p><button class="open" data-group="supplierCatalogue">Open group</button></article>
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">₦</div><h4>Finance, Payments & Tax</h4></div><p>Financial reporting, payments, fees, quotation-cost decisions, settlements and tax responsibilities.</p><button class="open" data-group="financeTax">Open group</button></article>
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">📣</div><h4>Advertisers & Communications</h4></div><p>Advertiser registration, CAC verification, campaigns, notifications, email delivery and recovery.</p><button class="open" data-group="advertisersComms">Open group</button></article>
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">👥</div><h4>People, Roles & Access Governance</h4></div><p>Employee onboarding, administrator and operator appointments, department assignments, role governance and permissions.</p><button class="open" data-group="governance">Open group</button></article>
-<article class="card"><div class="top"><div class="ico" aria-hidden="true">🛡️</div><h4>Security, Audit & Marketplace Oversight</h4></div><p>System security, activity and print audit, reserved approvals, consolidated reports and marketplace-wide oversight.</p><button class="open" data-group="oversight">Open group</button></article>
+<div class="section-head"><div><h3>Super Administrator Responsibility Groups</h3></div></div>
+<section class="grid" id="groupGrid" aria-label="Super Administrator responsibility groups">
+<button class="group-tile" type="button" data-group="operations"><span class="ico" aria-hidden="true">🎧</span><span class="group-title">Operations & Customer Matters</span></button>
+<button class="group-tile" type="button" data-group="supplierCatalogue"><span class="ico" aria-hidden="true">📦</span><span class="group-title">Supplier & Catalogue Management</span></button>
+<button class="group-tile" type="button" data-group="financeTax"><span class="ico" aria-hidden="true">₦</span><span class="group-title">Finance, Payments & Tax</span></button>
+<button class="group-tile" type="button" data-group="advertisersComms"><span class="ico" aria-hidden="true">📣</span><span class="group-title">Advertisers & Communications</span></button>
+<button class="group-tile" type="button" data-group="governance"><span class="ico" aria-hidden="true">👥</span><span class="group-title">People, Roles & Access Governance</span></button>
+<button class="group-tile" type="button" data-group="oversight"><span class="ico" aria-hidden="true">🛡️</span><span class="group-title">Security, Audit & Marketplace Oversight</span></button>
 </section>
-<div class="notice">All six groups remain under the exclusive Super Administrator Command Center. Grouping changes navigation only; it does not transfer, reduce or combine anyone's authority. The four departmental mini Command Centers remain independently accessible to their assigned administrators.</div>
 </div>
 <section class="panel detail hidden" id="groupDetail"><div class="eyebrow">Super Administrator responsibility group</div><h3 id="groupTitle">Responsibility group</h3><p id="groupText"></p><div class="detail-grid" id="groupItems"></div><p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="open" id="groupDepartment" type="button">Open related departmental workspace</button><button class="open" id="groupHome" type="button">← Return to Command Center</button></p></section>
 <section class="panel detail hidden" id="departmentDetail"><div class="eyebrow">Focused department workspace</div><h3 id="detailTitle">Department</h3><p id="detailText"></p><div class="detail-grid" id="detailGrid"></div><p style="margin-top:16px"><button class="open" id="backHome" type="button">← Return to Super Administrator Command Center</button></p></section>
