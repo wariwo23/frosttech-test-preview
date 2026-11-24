@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#082f55"><title>Supplier Settlements · FrostTech Test</title>
+<style>
+:root{--navy:#082f55;--blue:#147fbd;--ink:#172b40;--muted:#64778b;--line:#dce7f0;--bg:#f3f7fb;--green:#18794e;--red:#a32626}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,sans-serif}
+header{background:linear-gradient(115deg,#062746,#0b4778);color:white;padding:18px max(16px,calc((100vw - 1050px)/2));border-bottom:4px solid #55b9ed}
+h1{font-size:20px;margin:0}header p{margin:4px 0 0;color:#d8eafa;font-size:13px}
+main{max-width:1050px;margin:22px auto;padding:0 15px 40px}.panel,.record{background:white;border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 14px;box-shadow:0 2px 7px #102b4e08}
+h2{font-size:21px;margin:0 0 8px}h3{font-size:17px;margin:0 0 8px}.muted{color:var(--muted);font-size:13px}
+.notice{padding:11px 13px;border-radius:8px;background:#eaf5fc;margin:12px 0;font-size:13px}
+.message{padding:10px 12px;border-radius:8px;background:#eef3f7;margin:12px 0}.success{background:#e8f5ed;color:var(--green)}.error{background:#fff0f0;color:var(--red)}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}button,a.btn{border:0;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button.primary,.btn{background:var(--navy);color:white}button.secondary{background:#eaf1f7;color:var(--navy)}button.danger{background:#a32626;color:white}button:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted);font-weight:700}.field textarea{width:100%;min-height:90px;padding:10px;border:1px solid var(--line);border-radius:8px;font:14px Arial}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.kv div{padding:9px;background:#f5f8fb;border-radius:7px}.kv span{display:block;color:var(--muted);font-size:11px}.kv strong{font-size:14px}
+.hidden{display:none!important}
+@media(max-width:600px){.grid,.kv{grid-template-columns:1fr}main{padding:0 10px 30px}.panel,.record{padding:14px}}
+</style>
+</head>
+<body>
+<header><h1>FrostTech HVAC and Refrigeration</h1><p>Supplier Settlements Administration · Isolated Test Environment</p></header>
+<main>
+ <section class="panel">
+  <a class="btn" href="admin-command-center-test.html">← Back to Administration Command Center</a>
+  <h2 style="margin-top:16px">Supplier Settlements · Super Administrator Review</h2>
+  <p class="muted">Review submitted supplier settlements. Approval and rejection use the existing database-enforced Super Administrator functions. This workspace does not initiate or record payments.</p>
+  <div class="notice">ISOLATED TEST ENVIRONMENT — this page connects only to the FrostTech test database. Production data and settings are not accessed or changed.</div>
+  <div id="identity" class="message">Verifying Super Administrator access…</div>
+  <div class="toolbar"><button id="refresh" class="secondary" type="button">Refresh Settlements</button><button id="logout" class="secondary" type="button">Sign Out</button></div>
+  <div id="status" class="message" role="status">Checking access…</div>
+ </section>
+ <section class="panel"><h3>Submitted Settlements Awaiting Approval</h3><div id="rows"><p class="muted">Loading…</p></div></section>
+ <section class="panel"><h3>Recent Settlement Decisions</h3><div id="history"><p class="muted">Loading…</p></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-test.js"></script>
+<script>
+"use strict";
+const db=window.supabaseClient;if(!db)throw new Error("The isolated FrostTech test database client did not load.");
+const $=id=>document.getElementById(id);
+const naira=v=>v==null?"—":"₦"+Number(v).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
+let currentUser=null;
+function status(message,kind=""){const el=$("status");el.textContent=message;el.className="message "+kind;}
+function confirmAction(message){return window.confirm(message);}
+async function initialise(){
+ const {data:{session},error}=await db.auth.getSession();if(error)throw error;
+ if(!session?.user){location.replace("test-admin-login.html?return=supplier-settlements-admin-test.html");return;}
+ const {data:role,error:roleError}=await db.rpc("admin_get_my_role");if(roleError)throw roleError;
+ if(role!=="super_admin")throw new Error("This workspace is restricted to the active Super Administrator.");
+ currentUser=session.user;
+ $("identity").textContent="Signed in: "+(session.user.email||"Administrator")+" · super_admin";
+ await loadSettlements();
+}
+async function loadSettlements(){
+ $("refresh").disabled=true;$("rows").replaceChildren();$("history").replaceChildren();status("Loading settlement records…");
+ try{
+  const [submitted,history]=await Promise.all([
+   db.from("frosttech_supplier_settlements").select("id,settlement_number,supplier_id,currency,gross_entitlement,wht_base,wht_rate,wht_amount,net_payable,status,prepared_by,prepared_at,submitted_at,created_at").eq("status","submitted").order("submitted_at",{ascending:true}),
+   db.from("frosttech_supplier_settlements").select("id,settlement_number,supplier_id,status,gross_entitlement,wht_amount,net_payable,approved_at,rejected_at,rejection_reason").in("status",["approved","rejected"]).order("updated_at",{ascending:false}).limit(20)
+  ]);
+  if(submitted.error)throw submitted.error;if(history.error)throw history.error;
+  if(!submitted.data?.length)$("rows").append(node("p","muted","No submitted settlements are awaiting Super Administrator approval."));
+  (submitted.data||[]).forEach(s=>{
+   const card=node("article","record");card.append(node("h3","",s.settlement_number||s.id));
+   const kv=node("div","kv");
+   [["Supplier ID",s.supplier_id],["Status",s.status],["Gross entitlement",naira(s.gross_entitlement)],["WHT base",naira(s.wht_base)],["WHT rate",(s.wht_rate??"—")+"%"],["WHT amount",naira(s.wht_amount)],["Net payable",naira(s.net_payable)],["Currency",s.currency||"NGN"],["Prepared by",s.prepared_by],["Submitted",s.submitted_at?new Date(s.submitted_at).toLocaleString():"—"]].forEach(([k,v])=>{const d=node("div");d.append(node("span","",k),node("strong","",String(v??"—")));kv.append(d);});
+   card.append(kv);
+   if(s.prepared_by===currentUser.id)card.append(node("p","message error","You prepared this settlement. The database will not allow you to approve your own settlement."));
+   const actions=node("div","toolbar");
+   const approve=node("button","primary","Approve Settlement");
+   const reject=node("button","danger","Reject Settlement");
+   approve.disabled=s.prepared_by===currentUser.id;
+   approve.onclick=async()=>{
+    if(!confirmAction("Approve "+(s.settlement_number||s.id)+"? This records approval only. It does not transfer money."))return;
+    approve.disabled=true;reject.disabled=true;status("Submitting approval to the secure database function…");
+    try{const {data,error}=await db.rpc("frosttech_approve_supplier_settlement",{p_settlement_id:s.id});if(error)throw error;status("Settlement approved successfully. No payment was made. Record: "+data,"success");await loadSettlements();}
+    catch(e){status(e.message||"Approval failed.","error");approve.disabled=false;reject.disabled=false;}
+   };
+   reject.onclick=async()=>{
+    const reason=window.prompt("Enter the reason for rejecting this settlement (at least 5 characters):");
+    if(reason===null)return;if(reason.trim().length<5){status("A rejection reason of at least five characters is required.","error");return;}
+    if(!confirmAction("Reject "+(s.settlement_number||s.id)+"? This records the rejection and reason. No payment is made."))return;
+    approve.disabled=true;reject.disabled=true;status("Submitting rejection to the secure database function…");
+    try{const {data,error}=await db.rpc("frosttech_reject_supplier_settlement",{p_settlement_id:s.id,p_reason:reason.trim()});if(error)throw error;status("Settlement rejected and reason recorded. No payment was made. Record: "+data,"success");await loadSettlements();}
+    catch(e){status(e.message||"Rejection failed.","error");approve.disabled=false;reject.disabled=false;}
+   };
+   actions.append(approve,reject);card.append(actions);$("rows").append(card);
+  });
+  if(!history.data?.length)$("history").append(node("p","muted","No approved or rejected settlements in the recent history."));
+  (history.data||[]).forEach(s=>{const card=node("article","record");card.append(node("h3","",s.settlement_number||s.id),node("p","muted","Status: "+s.status+" · Gross: "+naira(s.gross_entitlement)+" · WHT: "+naira(s.wht_amount)+" · Net: "+naira(s.net_payable)));if(s.rejection_reason)card.append(node("p","muted","Reason: "+s.rejection_reason));$("history").append(card);});
+  status((submitted.data||[]).length+" submitted settlement(s) awaiting approval. "+(history.data||[]).length+" recent decision(s) shown.","success");
+ }catch(e){status(e.message||"Unable to load settlement records.","error");}
+ finally{$("refresh").disabled=false;}
+}
+$("refresh").addEventListener("click",loadSettlements);
+$("logout").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){status(error.message,"error");return;}location.replace("test-admin-login.html");});
+initialise().catch(e=>{ $("identity").textContent="Access not verified";status(e.message||"Unable to verify access.","error");$("rows").replaceChildren(node("p","muted","No settlement actions are available."));});
+</script>
+</body></html>
