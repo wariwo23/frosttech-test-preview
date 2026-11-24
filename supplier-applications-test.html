@@ -134,7 +134,7 @@ const db=window.supabaseClient;
 const msg=document.getElementById("message");
 const list=document.getElementById("applicationList");
 const filter=document.getElementById("statusFilter");
-let currentRole=null;
+let currentRole=null,canReviewApplications=false;
 function showMessage(t,type){msg.textContent=t;msg.className=type;msg.style.display="block"}
 function clearMessage(){msg.textContent="";msg.className="";msg.style.display="none"}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -151,7 +151,7 @@ function render(rows){
  if(!rows||!rows.length){list.innerHTML='<p class="muted">No supplier applications found for this filter.</p>';return}
  list.innerHTML=rows.map(s=>{
   const status=String(s.review_status||"pending").toLowerCase();
-  const canReview=status==="pending";
+  const canReview=canReviewApplications&&status==="pending";
   const canOverride=currentRole==="super_admin"&&status!=="pending";
   const actions=(canReview||canOverride)?'<div class="reason"><label for="reason-'+esc(s.supplier_id)+'">'+(canOverride?"Override reason (required)":"Rejection reason (required)")+'</label><textarea id="reason-'+esc(s.supplier_id)+'" rows="2" placeholder="Enter a clear reason if rejecting'+(canOverride?" or overriding":"")+'"></textarea></div><div class="actions">'+(canReview?'<button class="primary" data-decision="approved" data-id="'+esc(s.supplier_id)+'">Approve supplier</button>':'')+'<button class="danger" data-decision="rejected" data-id="'+esc(s.supplier_id)+'" data-override="'+(canOverride?"true":"false")+'">'+(canOverride?"Override: Reject":"Reject application")+'</button>'+(canOverride?'<button class="primary" data-decision="approved" data-id="'+esc(s.supplier_id)+'" data-override="true">Override: Approve</button>':'')+'</div>':'';
   return '<article class="application"><div class="top"><div><h3>'+esc(s.business_name)+'</h3><div class="meta">Application submitted: '+fmt(s.application_created_at)+'</div></div><span class="status '+esc(status)+'">'+esc(status.toUpperCase())+'</span></div><div class="details"><div><strong>Contact person</strong>'+esc(s.contact_name)+'</div><div><strong>Business email</strong>'+esc(s.email)+'</div><div><strong>Phone</strong>'+esc(s.phone)+'</div><div><strong>Location</strong>'+esc([s.address,s.city,s.state].filter(Boolean).join(", "))+'</div><div><strong>Email verified</strong>'+ (s.email_verified?"Yes":"No — approval blocked")+'</div><div><strong>Profile active</strong>'+(s.profile_active?"Yes":"No")+'</div><div><strong>Last reviewed</strong>'+fmt(s.reviewed_at)+'</div><div><strong>Review reason</strong>'+esc(s.review_reason||"—")+'</div></div>'+(s.reviewed_by?'<div class="meta">Reviewed by administrator ID: '+esc(s.reviewed_by)+'</div>':'')+actions+'</article>';
@@ -303,6 +303,9 @@ async function init(){
  try{
   currentRole=await verifyAdmin(data.session.user);
   if(!currentRole){await db.auth.signOut({scope:"local"});location.href="test-admin-login.html?return="+encodeURIComponent("supplier-applications-test.html");return}
+  const {data:reviewAllowed,error:reviewPermissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_applications.review"});
+  if(reviewPermissionError)throw reviewPermissionError;
+  canReviewApplications=reviewAllowed===true;
   document.getElementById("adminRole").textContent=currentRole.replaceAll("_"," ").toUpperCase();
   const emailPanel=document.getElementById("emailTestPanel");
   const emailTestButton=document.getElementById("sendEmailTestButton");
