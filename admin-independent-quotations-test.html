@@ -121,7 +121,6 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money=v=>"₦"+Number(v||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 let products=[];
-let currentAdminRole="";
 let quotationPermissions={prepare:false,readPayments:false,verifyPayments:false};
 function show(message,type="info",target="status"){const n=$(target);n.className="message "+type;n.textContent=message;}
 async function hasPermission(permission){
@@ -137,7 +136,6 @@ async function initialise(){
   if(pe||!profile||profile.is_active!==true)throw new Error("Administrator profile could not be verified.");
   const {data:role,error:re}=await db.rpc("admin_get_my_role");
   if(re||!role)throw new Error("An active authorised FrostTech account is required.");
-  currentAdminRole=role;
   quotationPermissions.prepare=await hasPermission("quotations.read_operational");
   quotationPermissions.readPayments=await hasPermission("payments.read");
   quotationPermissions.verifyPayments=await hasPermission("payments.verify");
@@ -330,7 +328,7 @@ async function refreshBankStatus(){
   const c=data.bank_confirmation;
   box.className="message "+(c?.password_email_status==="sent"?"success":"");
   box.textContent="Quotation "+data.quotation_number+" | Consultation Fee: "+money(data.consultation_fee)+" | Fee status: "+data.fee_status+" | Protected PDF email: "+data.document_email_status+(c?" | Bank reference: "+c.bank_reference+" | Confirmed: "+new Date(c.confirmed_at).toLocaleString("en-NG")+" | Password email: "+c.password_email_status:" | Awaiting bank transfer confirmation.");
-  if(["pending","failed"].includes(c?.password_email_status)&&["super_admin","finance_admin"].includes(currentAdminRole))$("retryPasswordEmail").classList.remove("hidden");
+  if(["pending","failed"].includes(c?.password_email_status)&&quotationPermissions.verifyPayments)$("retryPasswordEmail").classList.remove("hidden");
   else $("retryPasswordEmail").classList.add("hidden");
   if(c?.password_email_status==="sent")$("confirmBankCredit").disabled=true;
  }catch(e){box.className="message error";box.textContent=e.message||"Could not retrieve bank status.";}
