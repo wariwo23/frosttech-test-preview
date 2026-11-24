@@ -44,6 +44,65 @@ main{max-width:1180px;margin:22px auto;padding:0 16px 40px}.panel,.card{backgrou
 #groupGrid>.group-tile .group-title{font-size:12px;font-weight:800;line-height:1.25;white-space:normal;overflow-wrap:anywhere;word-break:normal}
 }
 
+
+/* Final explicit layout and title-wrap rules for the six Super Admin group buttons. */
+#groupGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,minmax(116px,auto))!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+#groupGrid>button.group-tile{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:116px!important;
+  height:auto!important;
+  padding:16px 12px!important;
+  white-space:normal!important;
+  text-align:center!important;
+  font-weight:900!important;
+}
+#groupGrid>button.group-tile>.group-title{
+  display:block!important;
+  flex:0 1 auto!important;
+  align-self:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+  font-weight:900!important;
+  text-align:center!important;
+}
+@media(max-width:620px){
+  #groupGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:repeat(3,minmax(112px,auto))!important;
+    gap:9px!important;
+  }
+  #groupGrid>button.group-tile{
+    min-height:112px!important;
+    padding:13px 8px!important;
+  }
+  #groupGrid>button.group-tile>.group-title{
+    font-size:13px!important;
+    line-height:1.3!important;
+    font-weight:900!important;
+  }
+}
+
 </style></head>
 <body>
 <header><div class="head"><div class="brand"><div class="mark">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Super Administrator Command Center · Isolated Test Environment</p></div></div><div class="actions"><button id="refresh" class="outline" type="button">Refresh Access</button><button id="signOut" class="light" type="button">Sign Out</button></div></div></header>
