@@ -153,7 +153,7 @@ async function checkAccess(){
  if(pe)throw pe;
  if(!profile||profile.is_active!==true)throw new Error("This account is not authorised for the test administration portal.");
  const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;
- if(!["super_admin","operations_admin","supplier_admin","finance_admin","catalogue_admin"].includes(role))throw new Error("No active Command Center administrator role was found.");
+ if(!role)throw new Error("No active authorised Command Center account was found.");
  currentRole=role;isSuper=role==="super_admin";
  const permissionNames=[...new Set(Object.values(modules).flatMap(x=>Array.isArray(x.permission)?x.permission:[x.permission]))];
  const checks=await Promise.all(permissionNames.map(async p=>{const {data,error}=await db.rpc("admin_has_permission",{required_permission:p});if(error)throw error;return [p,data===true];}));
