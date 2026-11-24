@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#082f55"><title>Department Command Center — FrostTech TEST</title>
+<style>
+:root{--navy:#082f55;--blue:#147fbd;--ice:#eaf5fc;--ink:#172b40;--muted:#64778b;--line:#dce7f0;--bg:#f3f7fb;--green:#18794e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,sans-serif}header{background:linear-gradient(115deg,#062746,#0b4778);color:white;padding:18px 16px;border-bottom:4px solid #55b9ed}.head{max-width:1120px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border-radius:11px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:900}.brand h1{font-size:18px;margin:0}.brand p{font-size:12px;color:#d8eafa;margin:3px 0 0}.actions{display:flex;gap:8px;flex-wrap:wrap}button,a.btn{border:0;border-radius:8px;padding:10px 13px;font:700 13px Arial;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.light{background:#fff;color:var(--navy)}.outline{background:transparent;border:1px solid #9fc7e5;color:#fff}
+main{max-width:1120px;margin:22px auto;padding:0 16px 38px}.panel,.card{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 2px 7px #102b4e08}.welcome{padding:21px;margin-bottom:17px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:800}.welcome h2{font-size:24px;margin:5px 0}.welcome p{margin:0;color:var(--muted)}.statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.pill{display:inline-flex;padding:6px 10px;border-radius:30px;background:#edf3f8;color:#42586d;font-size:12px;font-weight:700}.pill.good{background:#e8f5ed;color:var(--green)}.section-head{margin:19px 2px 10px}.section-head h3{font-size:17px;margin:0}.section-head p{font-size:12px;color:var(--muted);margin:3px 0 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{padding:16px;min-width:0}.card h4{font-size:15px;margin:0 0 7px}.card p{font-size:12px;color:var(--muted);margin:0 0 13px;min-height:38px}.card .open{width:100%;background:var(--navy);color:white}.card .open:disabled{background:#e7edf2;color:#718093;cursor:not-allowed}.card .pending{display:inline-block;font-size:11px;color:#8a5b00;background:#fff5dc;border-radius:20px;padding:5px 8px;margin-bottom:10px}.notice{border:1px solid #f0dca7;background:#fff9e9;border-radius:9px;padding:12px;color:#765500;font-size:13px;margin-top:14px}.hidden{display:none!important}footer{max-width:1120px;margin:auto;padding:0 16px 25px;color:var(--muted);font-size:12px}
+@media(max-width:600px){header{padding:15px 12px}.head{align-items:flex-start}.brand h1{font-size:16px}main{margin:13px auto;padding:0 10px 28px}.grid{grid-template-columns:1fr}.welcome{padding:17px}.welcome h2{font-size:21px}.card p{min-height:0}.actions button{padding:9px 10px}}
+</style></head>
+<body>
+<header><div class="head"><div class="brand"><div class="mark">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Department Mini Command Center · Isolated Test Environment</p></div></div><div class="actions"><button id="centralBtn" class="outline hidden" type="button">← Super Admin Command Center</button><button id="signOut" class="light" type="button">Sign Out</button></div></div></header>
+<main>
+<section class="panel welcome"><div class="eyebrow" id="eyebrow">Department workspace</div><h2 id="departmentTitle">Verifying departmental access…</h2><p id="departmentDescription">Please wait while FrostTech verifies your assigned administrator role and permissions.</p><div class="statusbar"><span class="pill good" id="rolePill">Checking access</span><span class="pill">TEST ONLY</span><span class="pill" id="identity">—</span></div></section>
+<div class="section-head"><h3 id="responsibilityTitle">Department responsibilities</h3><p id="responsibilitySubtitle">Only responsibilities belonging to your assigned department are displayed.</p></div>
+<section class="grid" id="responsibilityGrid"></section>
+<div class="notice hidden" id="pendingNotice"></div>
+</main>
+<footer>Departmental access is enforced by the FrostTech test database. Opening this page does not grant permissions or change appointments.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script>
+<script>
+(function(){
+"use strict";
+const db=window.supabaseClient,$=id=>document.getElementById(id);
+const roleDepartment={operations_admin:"operations",supplier_admin:"supplier",finance_admin:"finance",catalogue_admin:"catalogue"};
+const names={operations:"Operations",supplier:"Supplier Management",finance:"Finance & Tax",catalogue:"Catalogue & Product Management"};
+const descriptions={
+ operations:"Customer requests, standard and direct quotations, orders, order items, delivery scheduling and customer contact records.",
+ supplier:"Supplier applications, verification, supplier quotation review and supplier account workflows.",
+ finance:"Financial reporting, payment visibility and reconciliation, quotation cost submissions, supplier settlements and tax administration.",
+ catalogue:"Product listings, product information, images, selling prices, stock levels and product publication controls."
+};
+const functionsByDepartment={
+ operations:[
+  {title:"Customer Requests, Orders & Deliveries",desc:"Review customer requests, operational quotations, orders, order items and delivery arrangements.",permission:["customer_requests.manage","orders.manage","deliveries.manage","quotations.read_operational"],href:"departmental-admin-test.html",kind:"workspace"},
+  {title:"Standard & Direct Quotations",desc:"Prepare and manage independent customer quotations using the operational quotation permission.",permission:["quotations.read_operational"],href:"admin-independent-quotations-test.html",kind:"workspace"},
+  {title:"Customer Account Oversight",desc:"Customer account administration remains visible to the Super Administrator. A dedicated departmental customer-account workflow has not yet been ported into this test branch.",permission:["customer_requests.manage"],href:null,kind:"pending"}
+ ],
+ supplier:[
+  {title:"Supplier Applications & Verification",desc:"View supplier applications and use review controls only when the separate review permission is present. Super Admin override remains reserved.",permission:["supplier_applications.read"],href:"supplier-applications-test.html",kind:"workspace"},
+  {title:"Supplier Quotations",desc:"Supplier commercial quotations and selection workflow. The complete dedicated test workspace is not yet integrated.",permission:["supplier_quotes.manage"],href:null,kind:"pending"},
+  {title:"Supplier Account Maintenance",desc:"Supplier account-wide maintenance and protected supplier-cost information remain under Super Administrator control.",permission:["supplier_applications.manage"],href:null,kind:"pending"}
+ ],
+ finance:[
+  {title:"Financial Reporting & Payments",desc:"Financial summaries, payment records, financial quotation visibility and cost-submission workflow.",permission:["financial_reports.read","payments.read","quotations.read_financial","quotations.costs.submit"],href:"finance-admin-test.html",kind:"workspace"},
+  {title:"Tax Assessments, Remittances & Certificates",desc:"Tax assessments, remittance evidence, supplier tax profiles and certificates. Tax rules and rates remain Super Administrator-only.",permission:["tax.assessments.read","tax.assessments.manage","tax.remittances.manage","tax.supplier_profiles.read","tax.supplier_profiles.manage","tax.certificates.manage","tax.rules.read"],href:"tax-admin-test.html",kind:"workspace"},
+  {title:"Supplier Settlement Operations",desc:"Prepare and submit settlements and perform separately authorised execution tasks. Approval and rejection remain Super Administrator-only.",permission:["supplier_settlements.read","supplier_settlements.prepare","supplier_settlements.execute"],href:"supplier-settlements-admin-test.html",kind:"workspace"}
+ ],
+ catalogue:[
+  {title:"Product Catalogue",desc:"Product details, images, categories, selling prices, stock and product activation.",permission:["catalogue.manage","products.manage","selling_prices.manage","stock.manage"],href:null,kind:"pending"},
+  {title:"Supplier Costs",desc:"Supplier costs and internal sourcing values remain exclusively available to the Super Administrator.",permission:[],href:null,kind:"reserved"}
+ ]
+};
+function makeCard(item,allowed){
+ const card=document.createElement("article");card.className="card";
+ const h=document.createElement("h4");h.textContent=item.title;
+ const p=document.createElement("p");p.textContent=item.desc;
+ card.append(h,p);
+ const b=document.createElement("button");b.type="button";
+ if(item.kind==="reserved"){b.className="open";b.textContent="Reserved for Super Administrator";b.disabled=true;card.append(b);return card;}
+ if(!allowed){b.className="open";b.textContent="Not assigned to this account";b.disabled=true;card.append(b);return card;}
+ if(item.kind==="pending"||!item.href){const tag=document.createElement("span");tag.className="pending";tag.textContent="Test workspace integration pending";b.className="open";b.textContent="Not yet available in test";b.disabled=true;card.append(tag,b);return card;}
+ b.className="open";b.textContent="Open responsibility";b.addEventListener("click",()=>{location.href=item.href;});card.append(b);return card;
+}
+async function start(){
+ if(!db?.auth)throw new Error("Test authentication service did not load.");
+ const {data:{session},error}=await db.auth.getSession();if(error)throw error;
+ if(!session?.user){location.replace("test-admin-login.html?access=department");return;}
+ const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;
+ if(!role)throw new Error("No active authorised FrostTech administrator account was found.");
+ const isSuper=role==="super_admin";
+ const department=isSuper?new URLSearchParams(location.search).get("department")||"operations":roleDepartment[role];
+ if(!department||!names[department])throw new Error("This account has no valid departmental assignment.");
+ if(!isSuper&&department!==roleDepartment[role])throw new Error("Access to another department is not permitted.");
+ const {data:profile,error:pe}=await db.from("profiles").select("is_active").eq("id",session.user.id).maybeSingle();if(pe)throw pe;
+ if(!profile||profile.is_active!==true)throw new Error("This administrator profile is inactive.");
+ $("departmentTitle").textContent=names[department]+" Mini Command Center";
+ $("departmentDescription").textContent=descriptions[department];
+ $("identity").textContent=session.user.email||"Administrator";
+ $("rolePill").textContent=isSuper?"Super Administrator — read-only preview":role.replaceAll("_"," ");
+ $("eyebrow").textContent=isSuper?"Super Administrator departmental access":"Assigned departmental access";
+ $("centralBtn").classList.toggle("hidden",!isSuper);
+ $("centralBtn").addEventListener("click",()=>location.href="super-admin-command-center-test.html");
+ const items=functionsByDepartment[department]||[],checks=await Promise.all(items.map(async item=>{
+  if(isSuper)return true;if(!item.permission.length)return false;
+  const values=await Promise.all(item.permission.map(async p=>{const {data,error}=await db.rpc("admin_has_permission",{required_permission:p});if(error)throw error;return data===true;}));
+  return item.title==="Customer Requests, Orders & Deliveries"?values.every(Boolean):values.some(Boolean);
+ }));
+ const grid=$("responsibilityGrid");grid.replaceChildren();
+ items.forEach((item,i)=>grid.append(makeCard(item,checks[i])));
+ const unavailable=items.some((item,i)=>checks[i]&&(item.kind==="pending"||item.kind==="reserved"));
+ $("pendingNotice").classList.toggle("hidden",!unavailable);
+ if(unavailable)$("pendingNotice").textContent="Some responsibilities are intentionally shown but not yet connected to a verified test workspace. They have not been removed from FrostTech; no placeholder action is enabled.";
+ $("responsibilitySubtitle").textContent=isSuper?"Super Administrator preview. Use the return link to go back to the central Command Center.":"Only this administrator's assigned department and authorised responsibilities are displayed.";
+}
+$("signOut").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){$("departmentDescription").textContent=error.message;return;}location.replace("administration-portal-test.html");});
+start().catch(e=>{$("departmentTitle").textContent="Department access unavailable";$("departmentDescription").textContent=e.message||"Could not verify access.";});
+})();
+</script></body></html>
