@@ -76,7 +76,7 @@ const $=id=>document.getElementById(id);
 let currentRole=null,permissions=new Set(),isSuper=false;
 const modules={
 operations:{group:"operations",permission:"orders.manage",title:"Operations",text:"Customer requests, quotations, orders and delivery coordination. Open the protected isolated-test Operations workspace to access the verified departmental workflows."},
-quotations:{group:"operations",permission:"quotations.read_operational",title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
+quotations:{group:"operations",permission:["quotations.read_operational","quotations.read_financial"],title:"Quotations & Deliveries",text:"Operational quotation visibility, order handling, delivery scheduling and customer contact workflows."},
 supplier:{group:"supplier",permission:"supplier_applications.read",title:"Supplier Management",text:"Supplier applications, review decisions, verification and account maintenance. The existing supplier test workspace remains separate until its full access checks are reconciled."},
 "supplier-quotes":{group:"supplier",permission:"supplier_applications.review",title:"Supplier Quotations",text:"Supplier quotation review, selection and decision workflows."},
 finance:{group:"finance",permission:"financial_reports.read",title:"Finance & Payments",text:"Financial reporting, production payment reconciliation, financial quotation review and authorised quotation-cost submissions. Cost approval remains Super Administrator-only."},
@@ -98,14 +98,12 @@ security:{group:"security",permission:"security.super_admin",title:"Security & S
 };
 function setStatus(msg){$("contentSubtitle").textContent=msg;}
 function allowed(key){
- const m=modules[key];if(key==="security")return isSuper;if(isSuper)return true;
- const roleScopes={
-  operations_admin:["operations","quotations"],
-  supplier_admin:["supplier","supplier-quotes"],
-  finance_admin:["finance","payments","settlements","tax-rules","tax-assessments","tax-certificates","quotations"],
-  catalogue_admin:["catalogue"]
- };
- return !!(m&&(permissions.has(m.permission)||(roleScopes[currentRole]||[]).includes(key)));
+ const m=modules[key];
+ if(!m)return false;
+ if(key==="security")return isSuper;
+ if(isSuper)return true;
+ const required=Array.isArray(m.permission)?m.permission:[m.permission];
+ return required.some(permission=>permissions.has(permission));
 }
 function showDetail(key){
  const m=modules[key];if(!m)return;
@@ -157,7 +155,7 @@ async function checkAccess(){
  const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;
  if(!["super_admin","operations_admin","supplier_admin","finance_admin","catalogue_admin"].includes(role))throw new Error("No active Command Center administrator role was found.");
  currentRole=role;isSuper=role==="super_admin";
- const permissionNames=[...new Set(Object.values(modules).map(x=>x.permission))];
+ const permissionNames=[...new Set(Object.values(modules).flatMap(x=>Array.isArray(x.permission)?x.permission:[x.permission]))];
  const checks=await Promise.all(permissionNames.map(async p=>{const {data,error}=await db.rpc("admin_has_permission",{required_permission:p});if(error)throw error;return [p,data===true];}));
  permissions=new Set(checks.filter(x=>x[1]).map(x=>x[0]));
  $("identity").textContent=(user.email||"Administrator")+" · "+role.replaceAll("_"," ");
