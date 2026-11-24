@@ -202,3 +202,71 @@ A department selector must never grant or imply access.
 This document records findings and a proposed implementation map only. It is not executable SQL and does not change the live application.
 
 No production code or production database was changed. No test database migration, permission row, RLS policy, function grant, Auth setting, account, employee record, appointment, invitation, payment, quotation, supplier record, advertiser record, or notification was created, altered, or deleted during this audit.
+
+
+## 11. Implementation checkpoint 1 — sign-in separation and command-center shells
+
+Date: 2026-11-24  
+Environment: isolated test branch only
+
+### Added test-only pages
+
+- `administration-portal-test.html` — independent Super Administrator and Departmental Administrator sign-in entrances.
+- `super-admin-command-center-test.html` — exclusive central Super Administrator overview with four departments and a separate marketplace-wide oversight/reserved-responsibility section.
+- `department-command-center-test.html` — role-resolved departmental mini Command Center. A departmental user is routed to the department assigned by `admin_get_my_role()`; a Super Administrator can open a selected department from the central Command Center without another sign-in.
+
+### Updated test-only routing
+
+- `test-admin-login.html` now routes Super Administrator sign-in to the central Command Center and departmental administrator sign-in to the departmental mini Command Center.
+- The two sign-in entrances enforce their selected access mode after server-verified role lookup.
+- A departmental account is not allowed to use a return URL to enter the central Super Administrator Command Center or another department. Departmental sign-in returns to its assigned mini Command Center.
+- The previous `admin-command-center-test.html` route now redirects to the new Super Administrator or departmental shell according to the verified database role.
+
+### Responsibility display and authority boundaries
+
+The Super Administrator overview now explicitly displays:
+- Operations, Supplier Management, Finance & Tax, and Catalogue & Product Management.
+- Customer matters and account oversight.
+- Standard quotations and direct/independent quotations.
+- Employee, administrator and operator appointments.
+- Supplier costs and direct-order sourcing.
+- Advertiser/CAC/campaign administration.
+- Communications and notification recovery.
+- System security, roles, permissions, audit and print accountability.
+- Tax rules, VAT settings and effective dates.
+- Supplier settlement approval/rejection.
+- Marketplace summary and performance.
+
+The departmental shell displays only the department resolved from the authenticated role. It checks the existing database permissions before enabling each linked workspace. Super Administrator department access reuses the current authenticated session; existing workspace-level authorization and read-only preview behaviour remain in place.
+
+The supplier settlement approval/rejection workspace is displayed under Super Administrator reserved responsibilities, not as a Finance departmental action. Finance settlement preparation/execution remains distinct from Super Administrator approval/rejection.
+
+### Explicitly pending test integrations
+
+The shell deliberately displays but does not enable unported responsibilities:
+- Catalogue Admin product management, because the isolated test branch does not yet contain the dedicated Catalogue page/RPC integration.
+- Supplier quotation review/selection as a full mini-workspace.
+- Customer account administration beyond the existing Operations request/order workspace.
+- Super Administrator supplier-cost/direct-order sourcing.
+- Advertiser/CAC/campaign review.
+- Communications/notification recovery.
+- Consolidated marketplace reporting.
+
+These are not deleted or delegated. No fake or unverified action controls were added.
+
+### Static checks performed
+
+- Re-fetched the new and modified files from `command-center-shell-stage1`.
+- Confirmed the new central and departmental pages use the isolated test client/project reference and do not contain the production Supabase project reference.
+- Confirmed no service-role key is present in the new pages.
+- Confirmed central entry checks `admin_get_my_role()` and redirects non-Super Admin accounts to the departmental shell.
+- Confirmed departmental routing is resolved from the database role; a department query parameter does not change a departmental user's assignment.
+- Confirmed Finance workspace restoration detects and reuses an existing authenticated test session.
+- Confirmed the settlement approval page itself still checks `role === "super_admin"`.
+- Confirmed no database migration, permission assignment, RLS edit, Auth setting, employee appointment, invitation, payment, settlement, or production change was performed in this implementation checkpoint.
+
+### Verification limits
+
+This checkpoint has passed source/static inspection only. It has **not** yet passed live browser sign-in, mobile layout, or end-to-end navigation tests. The pending workspaces above must be ported and permission-tested before the architecture can be considered complete or ready for production consideration.
+
+Latest implementation commit at this checkpoint: `a6ec51b8d75255f53316d6ff1a6568343cf8ac42`.
