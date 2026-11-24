@@ -76,7 +76,7 @@ async function start(){
  $("departmentTitle").textContent=names[department]+" Mini Command Center";
  $("departmentDescription").textContent=descriptions[department];
  $("identity").textContent=session.user.email||"Administrator";
- $("rolePill").textContent=isSuper?"Super Administrator — read-only preview":role.replaceAll("_"," ");
+ $("rolePill").textContent=isSuper?"Super Administrator access":role.replaceAll("_"," ");
  $("eyebrow").textContent=isSuper?"Super Administrator departmental access":"Assigned departmental access";
  $("centralBtn").classList.toggle("hidden",!isSuper);
  $("centralBtn").addEventListener("click",()=>location.href="super-admin-command-center-test.html");
