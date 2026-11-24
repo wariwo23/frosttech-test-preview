@@ -562,10 +562,8 @@
 
       async function verifyAdminRole(user) {
         if (!user || user.app_metadata?.account_type === "guest") return null;
-        const { data: profile, error: profileError } = await db
-          .from("profiles").select("id, role, is_active").eq("id", user.id).maybeSingle();
-        if (profileError) throw profileError;
-        if (!profile || profile.is_active !== true || profile.role !== "admin") return null;
+        // The central database function validates the active profile and either
+        // the permanent administrator account or an authorised isolated-test grant.
         const { data: role, error: roleError } = await db.rpc("admin_get_my_role");
         if (roleError) throw roleError;
         return ["super_admin", "operations_admin", "supplier_admin", "finance_admin", "catalogue_admin"].includes(role) ? role : null;
