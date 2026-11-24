@@ -103,6 +103,25 @@ main{max-width:1180px;margin:22px auto;padding:0 16px 40px}.panel,.card{backgrou
   }
 }
 
+/* Screenshot-driven title sizing: make long responsibility names wrap visibly. */
+#groupGrid>button.group-tile>.group-title{
+  width:100%!important;
+  max-width:210px!important;
+  font-size:17px!important;
+  line-height:1.25!important;
+  font-weight:900!important;
+  white-space:normal!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  text-wrap:balance!important;
+}
+@media(max-width:620px){
+  #groupGrid>button.group-tile>.group-title{
+    max-width:165px!important;
+    font-size:15px!important;
+    line-height:1.25!important;
+  }
+}
 </style></head>
 <body>
 <header><div class="head"><div class="brand"><div class="mark">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Super Administrator Command Center · Isolated Test Environment</p></div></div><div class="actions"><button id="refresh" class="outline" type="button">Refresh Access</button><button id="signOut" class="light" type="button">Sign Out</button></div></div></header>
@@ -193,23 +212,3 @@ $("signOut").addEventListener("click",async()=>{const {error}=await db.auth.sign
 start().catch(e=>{hideAll();$("home").classList.remove("hidden");$("home").querySelector("h2").textContent="Super Administrator access required";$("home").querySelector("p").textContent=e.message||"Access verification failed.";});
 })();
 </script></body></html>
-
-/* Screenshot-driven title sizing: make long responsibility names wrap visibly. */
-#groupGrid>button.group-tile>.group-title{
-  width:100%!important;
-  max-width:210px!important;
-  font-size:17px!important;
-  line-height:1.25!important;
-  font-weight:900!important;
-  white-space:normal!important;
-  overflow-wrap:normal!important;
-  word-break:normal!important;
-  text-wrap:balance!important;
-}
-@media(max-width:620px){
-  #groupGrid>button.group-tile>.group-title{
-    max-width:165px!important;
-    font-size:15px!important;
-    line-height:1.25!important;
-  }
-}
