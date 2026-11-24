@@ -155,7 +155,7 @@ async function loadSupplierDisbursementPanel(){
    const result=node("p","muted","");
    send.onclick=async()=>{
     const value=Number(amount.input.value),proof=file.input.files&&file.input.files[0],reference=bankRef.input.value.trim();
-    if(!Number.isFinite(value)||value<=0||!/^\\d+(\\.\\d{1,2})?$/.test(amount.input.value.trim())){disbMessage("Enter a valid positive amount with no more than two decimal places.","error");return;}
+    if(!Number.isFinite(value)||value<=0||!/^\d+(\.\d{1,2})?$/.test(amount.input.value.trim())){disbMessage("Enter a valid positive amount with no more than two decimal places.","error");return;}
     if(value>Number(s.net_payable)){disbMessage("The amount cannot exceed the settlement net payable. The server also checks the remaining balance.","error");return;}
     if(reference.length<3){disbMessage("Enter the bank transfer reference.","error");return;}
     if(!proof){disbMessage("Choose the bank evidence file first.","error");return;}
