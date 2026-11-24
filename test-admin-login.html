@@ -635,9 +635,15 @@
 
       function getReturnUrl(role) {
         const params = new URLSearchParams(window.location.search);
-        const requested = params.get("return") || "admin-command-center-test.html";
+        const defaultDestination = role === "super_admin"
+          ? "super-admin-command-center-test.html"
+          : "department-command-center-test.html";
+        const requested = params.get("return");
         const allowedDestinations = [
           "admin-command-center-test.html",
+          "super-admin-command-center-test.html",
+          "department-command-center-test.html",
+          "administration-portal-test.html",
           "admin-independent-quotations-test.html",
           "supplier-applications-test.html",
           "departmental-admin-test.html",
@@ -649,17 +655,24 @@
           "admin-management-test.html"
         ];
         try {
-          const destination = new URL(requested, window.location.href);
+          const destination = new URL(requested || defaultDestination, window.location.href);
           const currentDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
           const fileName = destination.pathname.split("/").pop();
           if (destination.origin !== window.location.origin ||
               !destination.pathname.startsWith(currentDirectory) ||
               !allowedDestinations.includes(fileName)) {
-            return "admin-command-center-test.html";
+            return defaultDestination;
           }
+          if (role !== "super_admin" &&
+              ["admin-command-center-test.html","super-admin-command-center-test.html",
+               "employee-management-test.html","department-operator-management-test.html",
+               "admin-management-test.html"].includes(fileName)) {
+            return "department-command-center-test.html";
+          }
+          if (fileName === "admin-command-center-test.html") return defaultDestination;
           return destination.href;
         } catch (error) {
-          return "admin-command-center-test.html";
+          return defaultDestination;
         }
       }
 
@@ -773,7 +786,20 @@
               return;
             }
 
-            showMessage("Administrator access verified (" + authorisedRole.replaceAll("_", " ") + "). Opening the test workspace...", "success");
+            const accessMode = new URLSearchParams(window.location.search).get("access");
+            if ((accessMode === "super" && authorisedRole !== "super_admin") ||
+                (accessMode === "department" && authorisedRole === "super_admin")) {
+              await db.auth.signOut({ scope: "local" });
+              showMessage(
+                accessMode === "super"
+                  ? "This sign-in entrance is reserved for the Super Administrator. Please use Departmental Administrator Sign In."
+                  : "The Super Administrator must use the separate Super Administrator sign-in entrance.",
+                "error"
+              );
+              return;
+            }
+
+            showMessage("Administrator access verified (" + authorisedRole.replaceAll("_", " ") + "). Opening the assigned test workspace...", "success");
 
             window.location.href = getReturnUrl(authorisedRole);
           } catch (error) {
