@@ -598,11 +598,25 @@
               showMessage("This account is not authorised for the test quotation administration workspace.", "error");
               return;
             }
-            activeSessionEmail.textContent = "Signed in as: " +
-              (data.session.user.email || "Administrator") + " · Role: " +
-              role.replaceAll("_", " ");
-            showSection(activeSessionSection);
-            return;
+            const modeMismatch =
+              (entryMode === "super" && role !== "super_admin") ||
+              (entryMode === "department" && role === "super_admin");
+
+            if (modeMismatch) {
+              activeSessionEmail.textContent = "Signed in as: " +
+                (data.session.user.email || "Administrator") + " · Role: " +
+                role.replaceAll("_", " ");
+              showSection(activeSessionSection);
+              showMessage(
+                entryMode === "super"
+                  ? "This active account is not the Super Administrator. Sign out before using the Super Administrator entrance."
+                  : "The active account is the Super Administrator. Sign out before using a departmental administrator entrance.",
+                "error"
+              );
+              return;
+            }
+
+            window.location.replace(getReturnUrl(role));
           } catch (error) {
             showSection(loginSection);
             showMessage(error.message || "Administrator access could not be verified.", "error");
