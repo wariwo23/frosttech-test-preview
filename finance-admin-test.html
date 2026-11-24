@@ -21,6 +21,11 @@
 <h2>Supplier Disbursement Evidence · Isolated Test</h2>
 <p class="muted">Manual bank transfers only. Upload the bank evidence before recording the transfer. Verification requires a different administrator from the person who recorded it. Online provider verification remains server-side.</p>
 <p id="disbursementStatus" class="message" role="status">Checking supplier settlement access…</p>
+<section id="supplierDraftSubmission" class="record">
+<h3>Draft Supplier Settlements · Finance Submission</h3>
+<p class="muted">Finance may submit a prepared draft for independent Super Administrator approval. Submission does not approve or pay the settlement.</p>
+<div id="supplierDraftRows"></div>
+</section>
 <div id="supplierSettlementRows"></div>
 <h3>Manual Transfers Awaiting Independent Verification</h3>
 <div id="supplierVerificationRows"></div>
@@ -77,10 +82,45 @@ async function loadSupplierDisbursementPanel(){
  section.classList.remove("hidden");
  $("supplierSettlementRows").replaceChildren();
  $("supplierVerificationRows").replaceChildren();
+ $("supplierDraftRows").replaceChildren();
+ $("supplierDraftSubmission").classList.add("hidden");
  try{
   const {data:allowed,error:permissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_settlements.execute"});
   if(permissionError)throw permissionError;
   if(!allowed){section.classList.add("hidden");return;}
+  if(!preview){
+   try{
+    const {data:canPrepare,error:preparePermissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_settlements.prepare"});
+    if(preparePermissionError)throw preparePermissionError;
+    if(canPrepare){
+     $("supplierDraftSubmission").classList.remove("hidden");
+     const {data:drafts,error:draftError}=await db.from("frosttech_supplier_settlements")
+      .select("id,settlement_number,supplier_id,gross_entitlement,wht_amount,net_payable,status,created_at")
+      .eq("status","draft").order("created_at",{ascending:true});
+     if(draftError)throw draftError;
+     if(!drafts||!drafts.length)$("supplierDraftRows").append(node("p","muted","No prepared draft settlements are awaiting Finance submission."));
+     (drafts||[]).forEach(d=>{
+      const card=node("article","record");
+      card.append(node("h4","",d.settlement_number||d.id));
+      card.append(node("p","muted","Gross entitlement: "+naira(d.gross_entitlement)+" · WHT: "+naira(d.wht_amount)+" · Net payable: "+naira(d.net_payable)));
+      const submit=node("button","","Submit for Super Admin Approval");
+      const result=node("p","muted","");
+      submit.onclick=async()=>{
+       if(!(await ftConfirm("Submit "+(d.settlement_number||d.id)+" for independent Super Administrator approval? This does not approve or pay the settlement.","Submit Settlement")))return;
+       submit.disabled=true;disbMessage("Submitting supplier settlement…");
+       try{
+        const {data,error}=await db.rpc("frosttech_submit_supplier_settlement",{p_settlement_id:d.id});
+        if(error)throw error;
+        result.textContent="Submission accepted. Current workflow result: "+(data??"submitted");
+        disbMessage("Settlement submitted for independent Super Administrator approval. No payment was made.","success");
+        await loadSupplierDisbursementPanel();
+       }catch(e){disbMessage(e.message||"Settlement submission failed.","error");submit.disabled=false;}
+      };
+      card.append(submit,result);$("supplierDraftRows").append(card);
+     });
+    }
+   }catch(draftLoadError){$("supplierDraftRows").append(node("p","message","Draft submission controls could not load: "+(draftLoadError.message||"Unknown error")));}
+  }
   const [settlementResult,disbursementResult]=await Promise.all([
    db.from("frosttech_supplier_settlements").select("id,settlement_number,supplier_id,currency,gross_entitlement,wht_amount,net_payable,status,created_at").in("status",["approved","processing","partially_paid"]).order("created_at",{ascending:false}),
    db.from("frosttech_supplier_disbursements").select("id,settlement_id,payment_method,amount,currency,status,payment_reference,evidence_path,initiated_by,verified_by,initiated_at,verified_at,failure_reason").order("initiated_at",{ascending:false})
