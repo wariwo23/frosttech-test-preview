@@ -1332,7 +1332,7 @@ async function start() {
             userData.user.email || "Signed-in administrator";
 
         document.getElementById("adminRole").textContent =
-            roleNames[role];
+            roleNames[role] || role.replaceAll("_"," ");
 
         statusBox.textContent = previewMode
             ? "Super Administrator access verified. Preview mode is read-only."
@@ -1348,7 +1348,7 @@ async function start() {
                 .classList.remove("hidden");
         }
 
-        if (role==="operations_admin" || previewMode) {
+        if (!previewMode) {
             document.getElementById("operationsDashboard")
                 .classList.remove("hidden");
 
