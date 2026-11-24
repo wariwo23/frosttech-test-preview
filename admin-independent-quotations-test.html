@@ -122,23 +122,35 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const money=v=>"₦"+Number(v||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 let products=[];
 let currentAdminRole="";
+let quotationPermissions={prepare:false,readPayments:false,verifyPayments:false};
 function show(message,type="info",target="status"){const n=$(target);n.className="message "+type;n.textContent=message;}
+async function hasPermission(permission){
+ const {data,error}=await db.rpc("admin_has_permission",{required_permission:permission});
+ if(error)throw error;
+ return data===true;
+}
 async function initialise(){
  try{
   const {data:{session},error}=await db.auth.getSession();if(error)throw error;
   if(!session?.user){show("Please sign in through the FrostTech administrator portal.","error");return;}
-  const {data:profile,error:pe}=await db.from("profiles").select("id,role,is_active").eq("id",session.user.id).maybeSingle();
+  const {data:profile,error:pe}=await db.from("profiles").select("id,is_active").eq("id",session.user.id).maybeSingle();
   if(pe||!profile||profile.is_active!==true)throw new Error("Administrator profile could not be verified.");
   const {data:role,error:re}=await db.rpc("admin_get_my_role");
-  if(re||!["super_admin","operations_admin","finance_admin"].includes(role))throw new Error("An authorised FrostTech administrator account is required.");
+  if(re||!role)throw new Error("An active authorised FrostTech account is required.");
   currentAdminRole=role;
-  $("bankWorkflowCard").classList.remove("hidden");
-  const canPrepare=["super_admin","operations_admin"].includes(role);
-  const canConfirm=["super_admin","finance_admin"].includes(role);
-  $("confirmBankCredit").disabled=!canConfirm;
-  $("sendBankInstructions").disabled=!canPrepare;
-  if(!canConfirm)$("bankConfirmationForm").querySelector("h3").textContent="Bank confirmation is restricted to Finance Administrator or Super Administrator.";
-  if(canPrepare){
+  quotationPermissions.prepare=await hasPermission("quotations.read_operational");
+  quotationPermissions.readPayments=await hasPermission("payments.read");
+  quotationPermissions.verifyPayments=await hasPermission("payments.verify");
+  if(!quotationPermissions.prepare&&!quotationPermissions.readPayments&&!quotationPermissions.verifyPayments)
+   throw new Error("You do not have permission to access these quotation procedures.");
+  if(quotationPermissions.readPayments||quotationPermissions.verifyPayments)
+   $("bankWorkflowCard").classList.remove("hidden");
+  $("confirmBankCredit").disabled=!quotationPermissions.verifyPayments;
+  $("retryPasswordEmail").classList.toggle("hidden",!quotationPermissions.verifyPayments);
+  $("sendBankInstructions").disabled=!quotationPermissions.prepare;
+  $("generateSimulatedBankCredit").disabled=!(quotationPermissions.prepare||quotationPermissions.verifyPayments);
+  if(!quotationPermissions.verifyPayments)$("bankConfirmationForm").querySelector("h3").textContent="Payment verification permission is required to confirm bank credit or release the PDF password.";
+  if(quotationPermissions.prepare){
    const {data:list,error:le}=await db.from("products").select("id,name,category,unit,selling_price").eq("is_active",true).order("name");
    if(le)throw le;products=list||[];
    $("workspace").classList.remove("hidden");
@@ -147,8 +159,8 @@ async function initialise(){
    $("hotelPdfEncryptionTestCard").classList.remove("hidden");
    addItem();renderTotals();await refreshDrafts();
   }
-  $("status").textContent="Connected. Authorised administrator role verified: "+role+".";
-  await refreshBankStatus();
+  $("status").textContent="Connected. Procedure permissions verified for "+role.replaceAll("_"," ")+".";
+  if(quotationPermissions.readPayments)await refreshBankStatus();
  }catch(e){show(e.message||"Unable to verify access.","error");}
 }
 async function refreshDrafts(){
@@ -335,9 +347,9 @@ $("sendBankInstructions").addEventListener("click",async()=>{
 });
 $("refreshBankStatus").addEventListener("click",refreshBankStatus);
 $("generateSimulatedBankCredit").addEventListener("click",()=>{
- if(!["super_admin","finance_admin","operations_admin"].includes(currentAdminRole)){
+ if(!quotationPermissions.prepare&&!quotationPermissions.verifyPayments){
   $("bankWorkflowStatus").className="message error";
-  $("bankWorkflowStatus").textContent="Only an authorised Operations Administrator, Finance Administrator or Super Administrator can prepare this simulated test notification.";
+  $("bankWorkflowStatus").textContent="Operational quotation or payment verification permission is required.";
   return;
  }
  const simulatedReference="SIMULATED-BANK-CREDIT-FT-DQ-2026-0000002";
@@ -360,7 +372,7 @@ $("generateSimulatedBankCredit").addEventListener("click",()=>{
 $("confirmBankCredit").addEventListener("click",async()=>{
  const ref=$("bankTransferReference").value.trim(),details=$("bankNotificationDetails").value.trim(),b=$("confirmBankCredit");
  if(ref.length<4||details.length<8){$("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent="Enter the bank transaction reference and bank-originated credit notification details.";return;}
- if(!["super_admin","finance_admin"].includes(currentAdminRole)){ $("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent="Only Finance Administrator or Super Administrator can confirm bank credit.";return;}
+ if(!quotationPermissions.verifyPayments){ $("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent="Payment verification permission is required to confirm bank credit.";return;}
  b.disabled=true;b.textContent="Verifying and releasing password…";
  try{
   const {data,error}=await db.functions.invoke("direct-quotation-bank-workflow",{body:{action:"confirm_bank_payment",bank_reference:ref,notification_details:details}});
@@ -372,6 +384,7 @@ $("confirmBankCredit").addEventListener("click",async()=>{
  finally{b.disabled=false;b.textContent="Confirm bank credit and email PDF password";}
 });
 $("retryPasswordEmail").addEventListener("click",async()=>{
+ if(!quotationPermissions.verifyPayments){$("bankWorkflowStatus").className="message error";$("bankWorkflowStatus").textContent="Payment verification permission is required to retry password delivery.";return;}
  const b=$("retryPasswordEmail");b.disabled=true;b.textContent="Retrying…";
  try{
   const {data,error}=await db.functions.invoke("direct-quotation-bank-workflow",{body:{action:"retry_password_email"}});
