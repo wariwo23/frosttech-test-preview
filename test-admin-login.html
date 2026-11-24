@@ -663,10 +663,7 @@
               !allowedDestinations.includes(fileName)) {
             return defaultDestination;
           }
-          if (role !== "super_admin" &&
-              ["admin-command-center-test.html","super-admin-command-center-test.html",
-               "employee-management-test.html","department-operator-management-test.html",
-               "admin-management-test.html"].includes(fileName)) {
+          if (role !== "super_admin") {
             return "department-command-center-test.html";
           }
           if (fileName === "admin-command-center-test.html") return defaultDestination;
@@ -1027,7 +1024,20 @@
                 await db.auth.signOut({ scope: "local" });
                 showSection(loginSection);
                 showMessage(
-                    "This account is not authorised for the test quotation administration workspace.",
+                    "This account is not authorised for the test administration workspace.",
+                    "error"
+                );
+                return;
+            }
+
+            const accessMode = new URLSearchParams(window.location.search).get("access");
+            if ((accessMode === "super" && authorisedRole !== "super_admin") ||
+                (accessMode === "department" && authorisedRole === "super_admin")) {
+                showSection(activeSessionSection);
+                showMessage(
+                    accessMode === "super"
+                        ? "The current session is a departmental administrator. Sign out before using Super Administrator sign-in."
+                        : "The current session is the Super Administrator. Use the separate Super Administrator sign-in entrance.",
                     "error"
                 );
                 return;
