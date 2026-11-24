@@ -129,13 +129,7 @@ async function loadSupplierDisbursementPanel(){
   if(disbursementResult.error)throw disbursementResult.error;
   const settlements=settlementResult.data||[],disbursements=disbursementResult.data||[];
   if(preview){
-   $("supplierSettlementRows").append(node("p","muted","Super Administrator Finance preview is read-only. Upload, recording and verification actions are disabled."));
-   settlements.forEach(s=>{const card=node("article","record");card.append(node("h3","",s.settlement_number||s.id),node("p","muted","Status: "+s.status+" · Net payable: "+naira(s.net_payable)));$("supplierSettlementRows").append(card);});
-   disbursements.forEach(d=>{const card=node("article","record");card.append(node("h3","",d.id),node("p","muted","Settlement: "+d.settlement_id+" · "+d.payment_method+" · "+naira(d.amount)+" · "+d.status));$("supplierVerificationRows").append(card);});
-   if(!settlements.length)$("supplierSettlementRows").append(node("p","muted","No eligible supplier settlements."));
-   if(!disbursements.length)$("supplierVerificationRows").append(node("p","muted","No supplier disbursement records."));
-   disbMessage("Super Administrator preview: read-only. No actions are available.","success");
-   return;
+   $("supplierSettlementRows").append(node("p","message","Super Administrator review mode: you may open private evidence and independently verify or reject transfers initiated by another administrator. Uploading and recording new transfers remain disabled."));
   }
   const bySettlement=new Map();
   disbursements.forEach(d=>{if(!bySettlement.has(d.settlement_id))bySettlement.set(d.settlement_id,[]);bySettlement.get(d.settlement_id).push(d);});
@@ -146,45 +140,50 @@ async function loadSupplierDisbursementPanel(){
    card.append(node("p","muted","Status: "+s.status+" · Net payable: "+naira(s.net_payable)+" · Currency: "+(s.currency||"NGN")));
    const existing=bySettlement.get(s.id)||[];
    if(existing.length)card.append(node("p","muted","Existing disbursements: "+existing.map(d=>d.status+" "+naira(d.amount)).join(" · ")));
-   const grid=node("div","grid");
-   const amount=makeField("Transfer amount (NGN)","number",{min:"0.01",step:"0.01",max:String(s.net_payable),required:"required"});
-   const bankRef=makeField("Bank transfer reference","text",{maxlength:"180",required:"required",placeholder:"Bank transaction reference"});
-   const file=makeField("Bank evidence (PDF, JPG or PNG)","file",{accept:"application/pdf,image/jpeg,image/png",required:"required"});
-   grid.append(amount.box,bankRef.box,file.box);card.append(grid);
-   const send=node("button","","Upload Evidence & Record Transfer");
-   const result=node("p","muted","");
-   send.onclick=async()=>{
-    const value=Number(amount.input.value),proof=file.input.files&&file.input.files[0],reference=bankRef.input.value.trim();
-    if(!Number.isFinite(value)||value<=0||!/^\d+(\.\d{1,2})?$/.test(amount.input.value.trim())){disbMessage("Enter a valid positive amount with no more than two decimal places.","error");return;}
-    if(value>Number(s.net_payable)){disbMessage("The amount cannot exceed the settlement net payable. The server also checks the remaining balance.","error");return;}
-    if(reference.length<3){disbMessage("Enter the bank transfer reference.","error");return;}
-    if(!proof){disbMessage("Choose the bank evidence file first.","error");return;}
-    if(!["application/pdf","image/jpeg","image/png"].includes(proof.type)){disbMessage("Only PDF, JPG and PNG files are accepted.","error");return;}
-    if(proof.size<1||proof.size>10485760){disbMessage("The evidence file must be between 1 byte and 10 MB.","error");return;}
-    if(!(await ftConfirm("Upload this private bank evidence and record a pending manual transfer? This does not itself verify or send money.","Upload & Record")))return;
-    send.disabled=true;disbMessage("Uploading private evidence…");
-    let evidencePath=null;
-    try{
-     const {data:userData,error:userError}=await db.auth.getUser();if(userError)throw userError;
-     const uid=userData.user&&userData.user.id;if(!uid)throw new Error("Your Finance session has expired. Sign in again.");
-     const ext=proof.type==="application/pdf"?"pdf":proof.type==="image/jpeg"?"jpg":"png";
-     evidencePath=s.id+"/"+uid+"/"+crypto.randomUUID()+"."+ext;
-     const {error:uploadError}=await db.storage.from("supplier-disbursement-evidence").upload(evidencePath,proof,{cacheControl:"3600",upsert:false,contentType:proof.type});
-     if(uploadError)throw uploadError;
-     result.textContent="Evidence uploaded privately. Recording the pending transfer…";
-     const {data:disbursementId,error:recordError}=await db.rpc("frosttech_record_supplier_disbursement",{
-      p_settlement_id:s.id,p_payment_method:"manual_bank_transfer",p_amount:value,
-      p_idempotency_key:crypto.randomUUID(),p_payment_reference:reference,
-      p_provider_reference:null,p_evidence_path:evidencePath
-     });
-     if(recordError)throw new Error(recordError.message+" Evidence is already uploaded at "+evidencePath+". Do not upload it again; retain this path for support/retry.");
-     disbMessage("Manual transfer recorded as pending. It now requires independent verification. No payment was sent by this action.","success");
-     result.textContent="Pending disbursement ID: "+disbursementId;
-     await loadSupplierDisbursementPanel();
-    }catch(e){disbMessage(e.message||"Unable to record the manual transfer.","error");if(evidencePath)result.textContent="Evidence path (already uploaded; do not re-upload): "+evidencePath;}
-    finally{send.disabled=false;}
-   };
-   card.append(send,result);$("supplierSettlementRows").append(card);
+   if(!preview){
+    const grid=node("div","grid");
+    const amount=makeField("Transfer amount (NGN)","number",{min:"0.01",step:"0.01",max:String(s.net_payable),required:"required"});
+    const bankRef=makeField("Bank transfer reference","text",{maxlength:"180",required:"required",placeholder:"Bank transaction reference"});
+    const file=makeField("Bank evidence (PDF, JPG or PNG)","file",{accept:"application/pdf,image/jpeg,image/png",required:"required"});
+    grid.append(amount.box,bankRef.box,file.box);card.append(grid);
+    const send=node("button","","Upload Evidence & Record Transfer");
+    const result=node("p","muted","");
+    send.onclick=async()=>{
+     const value=Number(amount.input.value),proof=file.input.files&&file.input.files[0],reference=bankRef.input.value.trim();
+     if(!Number.isFinite(value)||value<=0||!/^\d+(\.\d{1,2})?$/.test(amount.input.value.trim())){disbMessage("Enter a valid positive amount with no more than two decimal places.","error");return;}
+     if(value>Number(s.net_payable)){disbMessage("The amount cannot exceed the settlement net payable. The server also checks the remaining balance.","error");return;}
+     if(reference.length<3){disbMessage("Enter the bank transfer reference.","error");return;}
+     if(!proof){disbMessage("Choose the bank evidence file first.","error");return;}
+     if(!["application/pdf","image/jpeg","image/png"].includes(proof.type)){disbMessage("Only PDF, JPG and PNG files are accepted.","error");return;}
+     if(proof.size<1||proof.size>10485760){disbMessage("The evidence file must be between 1 byte and 10 MB.","error");return;}
+     if(!(await ftConfirm("Upload this private bank evidence and record a pending manual transfer? This does not itself verify or send money.","Upload & Record")))return;
+     send.disabled=true;disbMessage("Uploading private evidence…");
+     let evidencePath=null;
+     try{
+      const {data:userData,error:userError}=await db.auth.getUser();if(userError)throw userError;
+      const uid=userData.user&&userData.user.id;if(!uid)throw new Error("Your Finance session has expired. Sign in again.");
+      const ext=proof.type==="application/pdf"?"pdf":proof.type==="image/jpeg"?"jpg":"png";
+      evidencePath=s.id+"/"+uid+"/"+crypto.randomUUID()+"."+ext;
+      const {error:uploadError}=await db.storage.from("supplier-disbursement-evidence").upload(evidencePath,proof,{cacheControl:"3600",upsert:false,contentType:proof.type});
+      if(uploadError)throw uploadError;
+      result.textContent="Evidence uploaded privately. Recording the pending transfer…";
+      const {data:disbursementId,error:recordError}=await db.rpc("frosttech_record_supplier_disbursement",{
+       p_settlement_id:s.id,p_payment_method:"manual_bank_transfer",p_amount:value,
+       p_idempotency_key:crypto.randomUUID(),p_payment_reference:reference,
+       p_provider_reference:null,p_evidence_path:evidencePath
+      });
+      if(recordError)throw new Error(recordError.message+" Evidence is already uploaded at "+evidencePath+". Do not upload it again; retain this path for support/retry.");
+      disbMessage("Manual transfer recorded as pending. It now requires independent verification. No payment was sent by this action.","success");
+      result.textContent="Pending disbursement ID: "+disbursementId;
+      await loadSupplierDisbursementPanel();
+     }catch(e){disbMessage(e.message||"Unable to record the manual transfer.","error");if(evidencePath)result.textContent="Evidence path (already uploaded; do not re-upload): "+evidencePath;}
+     finally{send.disabled=false;}
+    };
+    card.append(send,result);$("supplierSettlementRows").append(card);
+   }else{
+    card.append(node("p","muted","Read-only settlement details. Super Administrator verification actions are available in the independent verification queue below."));
+    $("supplierSettlementRows").append(card);
+   }
   });
   const pending=disbursements.filter(d=>d.payment_method==="manual_bank_transfer"&&["pending","processing"].includes(d.status));
   if(!pending.length)$("supplierVerificationRows").append(node("p","muted","No manual transfers are awaiting verification."));
