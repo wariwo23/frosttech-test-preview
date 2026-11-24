@@ -1293,15 +1293,35 @@ async function start() {
             return;
         }
 
-        if (!["operations_admin","super_admin"].includes(role)) {
+        if (!role) {
             deny(
-                "This Operations workspace is available only to an active Operations Administrator or Super Administrator."
+                "An active authorised FrostTech administrator account is required."
             );
             return;
         }
 
-        currentRole = role;
         previewMode = role==="super_admin";
+        const requiredPermissions = [
+            "customer_requests.manage",
+            "deliveries.manage",
+            "orders.manage",
+            "quotations.read_operational"
+        ];
+        if (!previewMode) {
+            const checks = await Promise.all(requiredPermissions.map(async permission => {
+                const {data,error} = await db.rpc("admin_has_permission", {
+                    required_permission: permission
+                });
+                if (error) throw error;
+                return data === true;
+            }));
+            if (!checks.every(Boolean)) {
+                deny("Operations workspace access requires its customer-request, order, quotation and delivery permissions.");
+                return;
+            }
+        }
+
+        currentRole = role;
 
         document.getElementById("pageTitle").textContent =
             previewMode
