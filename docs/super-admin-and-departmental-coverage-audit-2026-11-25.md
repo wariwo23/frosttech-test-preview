@@ -201,3 +201,29 @@ The isolated test database has Catalogue permission rows but the corresponding p
 ## 8. Change record for this audit
 
 This document records the source comparison and implementation plan. No application code, database schema, RLS policy, grants, role permissions, account, record, storage policy, Edge Function or production setting was changed as part of the audit.
+
+
+## 9. Implementation checkpoint — direct-order sourcing workspace (2026-11-25)
+
+A first Super Administrator workspace integration was completed in the isolated test repository only.
+
+- Added `direct-order-sourcing-test.html`, adapted from the existing production Direct Order Sourcing page.
+- The test page uses the isolated `supabase-test.js` client and contains no production Supabase project reference or production publishable key.
+- It calls the existing test database procedures:
+  - `frosttech_super_admin_list_direct_order_sourcing()`
+  - `frosttech_super_admin_assign_direct_order_item_supplier(...)`
+  - `frosttech_super_admin_record_direct_order_item_cost(...)`
+- The database procedure definitions were inspected read-only. Each checks `auth.uid()` and `public.is_super_admin()`; assignment is limited to paid/processing/pre-delivery orders and active, verified, approved suppliers; supplier reassignment clears the previous cost and records audit history; cost entry requires an assigned approved supplier and a paid order.
+- The page preserves the existing FrostTech confirmation modal and sourcing audit display, and adds a return link to the test Super Administrator Command Center.
+- The Super Administrator responsibility registry now links Direct-Order Sourcing to this test workspace.
+- Catalogue supplier-cost records remain explicitly pending because the corresponding `admin_list_product_supplier_costs`, `admin_save_product_supplier_cost`, `admin_select_product_supplier` and supporting test procedures are not present in the isolated test database. No direct table-write workaround was introduced.
+- The Catalogue product-management workspace remains pending because the `catalogue_*` procedures used by the production Catalogue page are not present in the test database. The existing product table's Super Administrator-only write policy was not changed.
+- Supplier quotation review and supplier account maintenance remain pending because the matching test workspace/procedure set has not yet been verified.
+
+Test-repository commits:
+- Add test-only Direct Order Sourcing page: `8f6b39e117a23be1d1432dbff3b1eb67cdd2150e`
+- Connect Super Admin responsibility tile: `830e38f7eafcda7219747c0ea6c25637b31d2336`
+
+Verification performed: source re-fetch, isolated client/reference checks, protected RPC name checks, and read-only inspection of the three RPC definitions and execute grants. No live browser session or sourcing mutation was executed.
+
+No production repository, production Supabase project, database schema, RLS policy, grant, role permission, account, record, storage setting, or Edge Function was changed.
