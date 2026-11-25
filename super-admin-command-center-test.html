@@ -224,7 +224,23 @@ async function start(){if(!db?.auth)throw new Error("Test authentication service
 document.querySelectorAll("[data-department]").forEach(b=>b.addEventListener("click",()=>{const key=b.dataset.department;location.href="department-command-center-test.html?department="+encodeURIComponent(key);}));
 document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>showReserved(b.dataset.open)));
 $("backHome").addEventListener("click",home);$("groupHome").addEventListener("click",home);$("reservedBack").addEventListener("click",home);$("reservedBackGroup").addEventListener("click",()=>{if(currentGroup)showGroup(currentGroup);else home();});document.querySelectorAll("[data-group]").forEach(b=>b.addEventListener("click",()=>showGroup(b.dataset.group)));
-$("refresh").addEventListener("click",()=>start().catch(e=>{$("identity").textContent=e.message;}));
+const refreshButton=$("refresh");
+refreshButton.addEventListener("click",async()=>{
+ if(refreshButton.disabled)return;
+ refreshButton.disabled=true;
+ refreshButton.textContent="Refreshing…";
+ refreshButton.setAttribute("aria-busy","true");
+ $("identity").textContent="Rechecking Super Administrator access…";
+ try{
+  await start();
+ }catch(e){
+  $("identity").textContent="Access check failed: "+(e.message||"Please try again.");
+ }finally{
+  refreshButton.disabled=false;
+  refreshButton.textContent="Refresh Access";
+  refreshButton.removeAttribute("aria-busy");
+ }
+});
 $("signOut").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){$("identity").textContent=error.message;return;}location.replace("administration-portal-test.html");});
 start().catch(e=>{hideAll();$("home").classList.remove("hidden");$("home").querySelector("h2").textContent="Super Administrator access required";$("home").querySelector("p").textContent=e.message||"Access verification failed.";});
 })();
