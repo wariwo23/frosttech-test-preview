@@ -99,7 +99,7 @@ function renderApprovalQueue(){
  const root=$("approvalQueue");root.replaceChildren();const queue=journalsCache.filter(j=>["submitted","approved"].includes(j.status));
  if(!queue.length){root.append(el("p","muted","No journals are awaiting approval or posting."));return;}
  queue.forEach(j=>{const box=el("div","record");box.append(el("strong","",j.description),el("p","muted",(j.source_reference||"No reference")+" · "+j.entry_date+" · "+j.status.toUpperCase()));
- let d=0,cr=0;linesCache.filter(x=>x.journal_id===j.id).forEach(x=>{d+=Number(x.debit);cr+=Number(x.credit);const a=accountsCache.find(y=>y.id===x.account_id);box.append(el("p","muted",(a?a.code+" · "+a.name:"Account")+" — Dr "+money(x.debit)+" / Cr "+money(x.credit));});
+ let d=0,cr=0;linesCache.filter(x=>x.journal_id===j.id).forEach(x=>{d+=Number(x.debit);cr+=Number(x.credit);const a=accountsCache.find(y=>y.id===x.account_id);box.append(el("p","muted",(a?a.code+" · "+a.name:"Account")+" — Dr "+money(x.debit)+" / Cr "+money(x.credit)));});
  box.append(el("p","", "Debits "+money(d)+" · Credits "+money(cr)));
  if(activeRole==="super_admin"){const bar=el("div","toolbar");if(j.status==="submitted"){const b=el("button","","Approve");b.addEventListener("click",()=>askStatus(j.id,"approved"));bar.append(b);}if(j.status==="approved"){const b=el("button","","Post to Official Ledger");b.addEventListener("click",()=>askStatus(j.id,"posted"));bar.append(b);}box.append(bar);}root.append(box);
  });
