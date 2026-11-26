@@ -16,7 +16,7 @@
 <section class="card"><h2>Launch appointment control</h2><p class="muted">The appointment hold is enabled by default. Only the Super Administrator can release it after official launch authorisation. Releasing the hold does not appoint anyone automatically.</p><label for="holdReason">Launch authorisation reason</label><textarea id="holdReason" rows="3" style="width:100%;padding:10px;border:1px solid #bbc7d4;border-radius:6px;font:inherit" placeholder="Enter the approved launch authorisation reason"></textarea><button id="releaseHold" type="button" disabled>Release Appointment Hold</button><button id="enableHold" type="button" class="secondary" disabled>Re-enable Appointment Hold</button><p id="holdActionStatus" class="message">Hold controls are loading.</p></section><section class="card"><h2>Department assignments</h2><p class="muted">Only the Super Administrator can appoint, suspend, reactivate or remove departmental administrator access. Departmental roles are determined by the employee's registered department. These actions do not delete employee or customer accounts.</p>
 <div class="grid"><div><label for="departmentFilter">Filter department</label><select id="departmentFilter"><option value="">All departments</option><option value="operations">Operations</option><option value="supplier_management">Supplier Management</option><option value="finance">Finance</option><option value="catalogue">Catalogue and Products</option></select></div><div><label for="statusFilter">Employment status</label><select id="statusFilter"><option value="">All statuses</option><option value="active">Active</option><option value="invited">Invited</option><option value="planned">Planned</option></select></div></div>
 <button id="refresh" type="button">Refresh assignments</button><p id="employeeStatus" class="message">Employee records have not yet been loaded.</p><div id="employees"></div></section>
-<section class="card"><h2>Temporary Isolated-Test Finance Access</h2><p class="muted">TEST ONLY. This control grants Finance workspace permissions to the pre-approved test identity without creating an employee record, activating employment, creating a departmental appointment, or releasing the appointment hold. This is not a production workflow.</p><p><strong>Approved test identity:</strong> onajite1968@gmail.com</p><button id="grantTestFinance" type="button">Grant Temporary Finance Test Access</button><button id="revokeTestFinance" type="button" class="danger">Revoke Temporary Finance Test Access</button><p id="testFinanceStatus" class="message">Use these controls only for the approved isolated Finance test identity.</p></section><section class="card"><h2>Current Department Administrators</h2><p class="muted">Review active and suspended appointments. The permanent Super Administrator account is protected.</p><button id="refreshAdmins" type="button" class="secondary">Refresh administrator list</button><p id="adminStatus" class="message">Administrator records have not yet been loaded.</p><div id="admins"></div></section>
+<section class="card"><h2>Departmental Administrator Positions</h2><p class="muted">These four department-specific positions are reserved and ready for future appointment. A vacant position does not create a user account or grant access. Appointments remain blocked while the launch appointment hold is active.</p><div id="departmentPositions" class="grid"><p class="muted">Position status will appear after administrator records load.</p></div></section><section class="card"><h2>Temporary Isolated-Test Finance Access</h2><p class="muted">TEST ONLY. This control grants Finance workspace permissions to the pre-approved test identity without creating an employee record, activating employment, creating a departmental appointment, or releasing the appointment hold. This is not a production workflow.</p><p><strong>Approved test identity:</strong> onajite1968@gmail.com</p><button id="grantTestFinance" type="button">Grant Temporary Finance Test Access</button><button id="revokeTestFinance" type="button" class="danger">Revoke Temporary Finance Test Access</button><p id="testFinanceStatus" class="message">Use these controls only for the approved isolated Finance test identity.</p></section><section class="card"><h2>Current Department Administrators</h2><p class="muted">Review active and suspended appointments. The permanent Super Administrator account is protected.</p><button id="refreshAdmins" type="button" class="secondary">Refresh administrator list</button><p id="adminStatus" class="message">Administrator records have not yet been loaded.</p><div id="admins"></div></section>
 </div></main>
 <div id="confirm" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><section><h2 id="confirmTitle">Confirm departmental change</h2><p id="confirmText"></p><button id="cancel" class="secondary" type="button">Cancel</button><button id="accept" type="button">Confirm</button></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script><script>
@@ -64,9 +64,35 @@ function renderEmployees(){
   card.append(actions);root.append(card);
  });
 }
+function renderDepartmentPositions(){
+ const root=$("departmentPositions");if(!root)return;root.replaceChildren();
+ const positions=[
+  {role:"operations_admin",title:"Operations Administrator",department:"Operations"},
+  {role:"supplier_admin",title:"Supplier Administrator",department:"Supplier Management"},
+  {role:"finance_admin",title:"Finance Administrator",department:"Finance"},
+  {role:"catalogue_admin",title:"Catalogue Administrator",department:"Catalogue and Products"}
+ ];
+ positions.forEach(position=>{
+  const account=accounts.find(a=>a.administrator_role===position.role);
+  const card=node("article","","operator");
+  card.append(node("h3",position.title));
+  card.append(node("p","Department: "+position.department));
+  if(account){
+   card.append(node("p","Assigned to: "+(account.email||account.full_name||"Registered administrator")));
+   card.append(node("p","Appointment status: "+(account.administrator_active===true?"Active":"Suspended")));
+  }else{
+   card.append(node("p","Vacant — no administrator appointed."));
+   card.append(node("p","Appointment status: Reserved; awaiting an eligible appointee."));
+  }
+  if(position.role==="finance_admin")card.append(node("p","Temporary isolated-test Finance access, if active, is separate from a formal departmental appointment.","muted"));
+  if(appointmentHold)card.append(node("p","Appointment hold is active. No appointment can be made yet.","muted"));
+  root.append(card);
+ });
+}
 async function loadAdmins(){
  $("refreshAdmins").disabled=true;msg("adminStatus","Loading administrator accounts…");$("admins").replaceChildren();
  try{const {data,error}=await db.rpc("admin_list_administrator_accounts");if(error)throw error;accounts=Array.isArray(data)?data:[];
+ renderDepartmentPositions();
  if(!accounts.length){msg("adminStatus","No administrator accounts returned.");return;}
  accounts.forEach(a=>{const role=a.administrator_role||"",superAdmin=role==="super_admin",active=a.administrator_active===true;
   const card=node("article","","operator");card.append(node("h3",a.email||"Administrator"));card.append(node("p","Role: "+(roleNames[role]||role||"Not assigned")));card.append(node("p","Status: "+(active?"Active":"Suspended")));card.append(node("p","Account ID: "+(a.user_id||"")));
