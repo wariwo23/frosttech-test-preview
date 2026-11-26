@@ -42,7 +42,8 @@ const descriptions={
 const functionsByDepartment={
  operations:[
   {title:"Customer Requests, Orders & Deliveries",desc:"Review customer requests, operational quotations, orders, order items and delivery arrangements.",permission:["customer_requests.manage","orders.manage","deliveries.manage","quotations.read_operational"],href:"departmental-admin-test.html",kind:"workspace"},
-  {title:"Standard & Direct Quotations",desc:"Prepare and manage independent customer quotations using the operational quotation permission.",permission:["quotations.read_operational"],href:"admin-independent-quotations-test.html",kind:"workspace"},
+  {title:"Standard Quotations",desc:"Prepare, itemise, revise and submit request-linked standard quotations. Consultation-fee calculation remains server-controlled.",permission:["quotations.manage_operational"],href:"operations-standard-quotations-test.html",kind:"workspace"},
+  {title:"Direct Quotations",desc:"Prepare and manage independent direct customer quotations using the existing protected quotation workflow.",permission:["quotations.read_operational"],href:"admin-independent-quotations-test.html",kind:"workspace"},
   {title:"Customer Account Oversight",desc:"Customer account administration remains visible to the Super Administrator until the departmental workflow is fully integrated.",permission:["customer_requests.manage"],href:null,kind:"pending"}
  ],
  supplier_catalogue:[
