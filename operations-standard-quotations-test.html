@@ -286,7 +286,7 @@ async function init(){
  try{
   const {data:{user},error:authError}=await db.auth.getUser();
   if(authError||!user)throw new Error("Sign in through the FrostTech test Operations portal first.");
-  const {data:profile,error:profileError}=await db.from("profiles").select("id,email,role,is_active").eq("id",user.id).maybeSingle();
+  const {data:profile,error:profileError}=await db.from("profiles").select("id,full_name,role,is_active").eq("id",user.id).maybeSingle();
   if(profileError||!profile||profile.is_active!==true)throw new Error("Active administrator profile could not be verified.");
   const {data:role,error:roleError}=await db.rpc("admin_get_my_role");
   if(roleError||!["operations_admin","super_admin"].includes(String(role)))throw new Error("Operations Administrator or Super Administrator access is required.");
