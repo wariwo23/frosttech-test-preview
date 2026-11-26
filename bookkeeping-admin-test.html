@@ -16,7 +16,7 @@
 </header>
 <main>
 <section class="card banner"><strong>ISOLATED TEST ENVIRONMENT</strong><p>This workspace reads the separate FrostTech company bookkeeping ledger in the test database. It does not import marketplace customer payments, supplier settlements or production financial records. No production project is accessed.</p></section>
-<section class="card"><h2>Bookkeeping access</h2><p id="accessStatus" class="message">Verifying your administrator session…</p><div id="identity" class="muted"></div><div class="toolbar"><button id="refresh" type="button">Refresh Bookkeeping</button><button id="signOut" type="button" class="secondary">Sign Out</button></div></section>
+<section class="card"><h2>Bookkeeping access</h2><p id="accessStatus" class="message">Verifying your administrator session…</p><p id="loginAction" class="hidden"><a class="button" href="test-admin-login.html?return=bookkeeping-admin-test.html">Sign In to Test Administration</a></p><div id="identity" class="muted"></div><div class="toolbar"><button id="refresh" type="button">Refresh Bookkeeping</button><button id="signOut" type="button" class="secondary">Sign Out</button></div></section>
 <div id="workspace" class="hidden">
 <section class="card"><h2>Accounting period</h2><div id="periodInfo" class="message">Loading accounting period…</div></section>
 <section class="card"><h2>Bookkeeping control summary</h2><p class="muted">Only posted journal entries form the official ledger balances. Draft entries remain pending and are displayed separately below.</p><div id="metrics" class="grid"></div></section>
@@ -25,7 +25,7 @@
 <section class="card"><h2>Journal Register</h2><div id="journals"></div></section>
 <section class="card"><h2>Expense Register</h2><div id="expenses"></div></section>
 <section class="card"><h2>Shareholder Loan Register</h2><div id="loans"></div></section>
-<section class="card"><h2>Financial reporting status</h2><p class="message">The opening entries are drafts and have not been posted. Official Trial Balance, Profit &amp; Loss, Balance Sheet and Cash Flow reports must be generated from posted entries only. Super Administrator review and posting controls are not yet enabled in this interface.</p></section>
+<section class="card"><h2>Financial reporting status</h2><p class="message">The opening entries remain drafts until reviewed. The Trial Balance, Profit &amp; Loss, Balance Sheet and Bank Cash Movement reports use posted journal entries only.</p></section>
 </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -145,7 +145,7 @@ async function init(){
  try{
   if(!db?.auth)throw new Error("The isolated test database client did not load.");
   const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError)throw sessionError;
-  if(!session?.user){showMessage("Please sign in through the FrostTech test administrator login first.","error");return;}
+  if(!session?.user){showMessage("No active test administrator session was found. Sign in to continue; you will return here afterwards.","error");$("loginAction").classList.remove("hidden");$("refresh").disabled=false;$("signOut").disabled=true;return;}
   const {data:role,error:roleError}=await db.rpc("admin_get_my_role");if(roleError)throw roleError;
   if(!role)throw new Error("No active administrator role was found.");
   let permitted=role==="super_admin";
