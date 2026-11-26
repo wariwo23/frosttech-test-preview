@@ -59,8 +59,8 @@ const functionsByDepartment={
   {title:"Supplier Settlement Preparation",desc:"Prepare and document supplier settlements. Final approval, rejection and disbursement authority remain reserved.",permission:["supplier_settlements.read","supplier_settlements.prepare"],href:"finance-admin-test.html",kind:"workspace"}
  ],
  advertisers_communications:[
-  {title:"Advertiser Applications & Documents",desc:"Advertiser onboarding, business-document review and advertiser account records are awaiting test data-model integration.",permission:["advertisers.manage","advertiser_documents.review"],href:null,kind:"pending"},
-  {title:"Paid Advertising Campaign Review",desc:"Review and approve only successfully paid Development/Test campaigns. The test database does not yet contain the advertising tables or review function.",permission:["advertisements.review"],href:null,kind:"pending"},
+  {title:"Advertiser Applications & Documents",desc:"Review advertiser applications, CAC numbers and private supporting documents. Approval requires an accepted CAC certificate.",permission:["advertisers.manage","advertiser_documents.review"],href:"advertisers-communications-test.html",kind:"workspace"},
+  {title:"Paid Advertising Campaign Review",desc:"Review paid Development/Test campaigns, record decisions and activate approved campaigns. Payment verification remains server-controlled.",permission:["advertisements.review"],href:"advertisers-communications-test.html",kind:"workspace"},
   {title:"Communications & Notifications",desc:"Departmental communications and notification administration are awaiting the isolated test workflow integration.",permission:["communications.manage","notifications.manage"],href:null,kind:"pending"}
  ]
 };
