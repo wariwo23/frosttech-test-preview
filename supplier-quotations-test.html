@@ -111,7 +111,11 @@ async function init(){
  try{
   const {data:role,error:roleError}=await db.rpc("admin_get_my_role");
   if(roleError)throw roleError;
-  if(!["super_admin","supplier_admin"].includes(role)){msg("Access denied. This workspace is reserved for Supplier Administrators and the Super Administrator.","error");return;}
+  if(!["super_admin","supplier_admin"].includes(role)){
+   $("role").textContent=role?role.replaceAll("_"," ").toUpperCase():"ROLE NOT VERIFIED";
+   const detail=role==="operations_admin"?"Your current session is signed in as Operations Administrator. Sign out and sign in through the Super Administrator portal.":role==="finance_admin"?"Your current session is signed in as Finance Administrator. Sign out and sign in through the Super Administrator portal.":role==="catalogue_admin"?"Your current session is signed in as Catalogue Administrator. Sign out and sign in through the Super Administrator portal.":role?"This account does not have a permitted role for this workspace.":"The current session did not return an authorised administrator role. Sign out and sign in again through the Super Administrator portal.";
+   msg("Access denied. "+detail,"error");return;
+  }
   currentRole=role;
   const {data:allowed,error:permissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_quotes.manage"});
   if(permissionError)throw permissionError;
