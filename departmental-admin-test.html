@@ -1350,7 +1350,7 @@ async function start() {
 
         // The entry checks above already established every required Operations permission.
         // Super Administrator retains the existing read-only preview.
-        if (previewMode || role) {
+        if (previewMode || role === "operations_admin") {
             document.getElementById("operationsDashboard")
                 .classList.remove("hidden");
 
@@ -1368,9 +1368,17 @@ async function start() {
                 portalLink.textContent = "Open Supplier Administration";
                 portalDescription.textContent = "Review supplier applications, record verification decisions, manage submitted supplier quotations and select or reject supplier quotations. Supplier-cost records and internal pricing remain restricted to the Super Administrator.";
             } else if (role==="finance_admin") {
-                portalLink.href = "admin-command-center-test.html";
+                portalLink.href = "department-command-center-test.html";
                 portalLink.textContent = "Open Finance Administration";
-                portalDescription.textContent = "Review production payment reconciliation, financial quotations and your own cost submissions. Cost approval and expense-ledger access remain restricted to the Super Administrator.";
+                portalDescription.textContent = "Open the Finance, Payments & Tax mini command center.";
+            } else if (role==="supplier_admin" || role==="catalogue_admin") {
+                portalLink.href = "department-command-center-test.html";
+                portalLink.textContent = "Open Supplier & Catalogue Administration";
+                portalDescription.textContent = "Open the consolidated Supplier & Catalogue mini command center. Supplier costs and final supplier selection remain reserved for the Super Administrator.";
+            } else if (role==="advertisers_admin") {
+                portalLink.href = "department-command-center-test.html";
+                portalLink.textContent = "Open Advertisers & Communications Administration";
+                portalDescription.textContent = "Open the Advertisers & Communications mini command center.";
             }
 
             document.getElementById("otherDepartmentMessage")
