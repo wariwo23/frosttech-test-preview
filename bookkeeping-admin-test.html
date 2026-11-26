@@ -41,15 +41,16 @@ let activeUser=null;
 async function load(){
  $("refresh").disabled=true;showMessage("Loading company bookkeeping records…");
  try{
-  const [accountResult,periodResult,journalResult,expenseResult,loanResult]=await Promise.all([
+  const [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult]=await Promise.all([
    db.from("ft_bookkeeping_accounts").select("id,code,name,account_type,is_active").order("code"),
    db.from("ft_bookkeeping_periods").select("id,period_name,start_date,end_date,status").order("start_date",{ascending:false}),
    db.from("ft_bookkeeping_journals").select("id,entry_number,entry_date,description,source_reference,status,created_at").order("entry_date",{ascending:false}),
+   db.from("ft_bookkeeping_journal_lines").select("journal_id,account_id,line_description,debit,credit"),
    db.from("ft_bookkeeping_expenses").select("expense_date,payee,description,amount,status,payment_method").order("expense_date",{ascending:false}),
    db.from("ft_bookkeeping_shareholder_loans").select("lender_name,principal_amount,interest_rate,amount_repaid,repayment_terms,status,agreement_date").order("created_at",{ascending:false})
   ]);
-  for(const result of [accountResult,periodResult,journalResult,expenseResult,loanResult])if(result.error)throw result.error;
-  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[];
+  for(const result of [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult])if(result.error)throw result.error;
+  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[];
   const active=accounts.filter(a=>a.is_active);
   renderTable($("accounts"),["Code","Account","Type","Status"],active.map(a=>[a.code,a.name,a.account_type,"Active"]),"No active accounts.");
   const period=periods[0];
@@ -57,8 +58,9 @@ async function load(){
   const draft=journals.filter(j=>j.status==="draft"),posted=journals.filter(j=>j.status==="posted"),rejected=journals.filter(j=>j.status==="rejected");
   const metrics=$("metrics");metrics.replaceChildren();
   [["Active accounts",active.length],["Open accounting periods",periods.filter(p=>p.status==="open").length],["Draft journal entries",draft.length],["Posted journal entries",posted.length],["Rejected duplicate drafts",rejected.length],["Expense records",expenses.length],["Shareholder loan records",loans.length]].forEach(([label,value])=>{const m=el("div","metric");m.append(el("span","muted",label),el("strong","",String(value)));metrics.append(m);});
-  const journalRows=journals.map(j=>{const detail=el("div","");detail.append(el("strong","",j.description));detail.append(el("div","muted",j.source_reference||"No source reference"));return [j.entry_number||"—",j.entry_date,detail,el("span","tag",j.status.toUpperCase())];});
-  renderTable($("journals"),["Entry No.","Date","Description / Reference","Status"],journalRows,"No journal entries.");
+  const accountNames=new Map(accounts.map(a=>[a.id,a.code+" · "+a.name]));
+  const journalRows=journals.map(j=>{const detail=el("div","");detail.append(el("strong","",j.description));detail.append(el("div","muted",j.source_reference||"No source reference"));const journalLines=lines.filter(line=>line.journal_id===j.id);const list=el("ul","lineitems");let debit=0,credit=0;journalLines.forEach(line=>{debit+=Number(line.debit||0);credit+=Number(line.credit||0);list.append(el("li","",accountNames.get(line.account_id)+" · Dr "+money(line.debit)+" · Cr "+money(line.credit)+(line.line_description?" · "+line.line_description:"")));});detail.append(list);return [j.entry_number||"—",j.entry_date,detail,money(debit),money(credit),el("span","tag",j.status.toUpperCase())];});
+  renderTable($("journals"),["Entry No.","Date","Description / Account Lines","Total Debits","Total Credits","Status"],journalRows,"No journal entries.");
   renderTable($("expenses"),["Date","Payee","Description","Amount","Payment Method","Status"],expenses.map(e=>[e.expense_date,e.payee,e.description,money(e.amount),e.payment_method,e.status.toUpperCase()]),"No expense records.");
   renderTable($("loans"),["Lender","Principal","Interest","Repaid","Outstanding","Repayment Terms","Status"],loans.map(l=>[l.lender_name,money(l.principal_amount),Number(l.interest_rate).toFixed(2)+"%",money(l.amount_repaid),money(Number(l.principal_amount)-Number(l.amount_repaid)),l.repayment_terms,l.status.toUpperCase()]),"No shareholder loans recorded.");
   showMessage("Bookkeeping records loaded. Draft entries remain unposted and no official report balances have been changed.","success");
