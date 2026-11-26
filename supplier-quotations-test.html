@@ -26,7 +26,7 @@ footer{max-width:1120px;margin:auto;padding:0 12px 24px;color:#617386;font-size:
 <body>
 <header><div class="head"><div><h1>FrostTech HVAC and Refrigeration</h1><p class="sub">Supplier Quotations — Isolated Test Workspace</p></div><div class="toolbar"><button id="refresh" type="button">Refresh</button><button id="back" class="secondary" type="button">Back to Command Center</button><button id="logout" class="secondary" type="button">Sign Out</button></div></div></header>
 <main>
-<section class="panel"><h2>Supplier quotation review</h2><p class="muted">Review submitted supplier offers, compare supplier prices and select one offer for a customer request. Selection rejects competing submitted offers for the same request and creates an audit record. Super Administrator access is read-only here; supplier-cost margins and customer totals remain protected.</p><p id="message" class="message" role="status">Verifying administrator access…</p><p><span id="role" class="status">Checking role</span> <span class="status">TEST ONLY</span></p></section>
+<section class="panel"><h2>Supplier quotation oversight</h2><p class="muted">This workspace is restricted to the Super Administrator during the authorization transition. Departmental Supplier & Catalogue administrators will receive a separate non-financial review workflow after its server-side data contract is verified. Supplier prices, totals, delivery costs and final supplier selection are not exposed through the departmental interface.</p><p id="message" class="message" role="status">Verifying administrator access…</p><p><span id="role" class="status">Checking role</span> <span class="status">TEST ONLY</span></p></section>
 <section id="quotes" aria-live="polite"></section>
 </main>
 
@@ -111,10 +111,10 @@ async function init(){
  try{
   const {data:role,error:roleError}=await db.rpc("admin_get_my_role");
   if(roleError)throw roleError;
-  if(!["super_admin","supplier_admin"].includes(role)){
+  if(role!=="super_admin"){
    $("role").textContent=role?role.replaceAll("_"," ").toUpperCase():"ROLE NOT VERIFIED";
    const detail=role==="operations_admin"?"Your current session is signed in as Operations Administrator. Sign out and sign in through the Super Administrator portal.":role==="finance_admin"?"Your current session is signed in as Finance Administrator. Sign out and sign in through the Super Administrator portal.":role==="catalogue_admin"?"Your current session is signed in as Catalogue Administrator. Sign out and sign in through the Super Administrator portal.":role?"This account does not have a permitted role for this workspace.":"The current session did not return an authorised administrator role. Sign out and sign in again through the Super Administrator portal.";
-   msg("Access denied. "+detail,"error");return;
+   msg("Access denied. Supplier quotation costs and final selection are reserved for the Super Administrator. "+detail,"error");return;
   }
   currentRole=role;
   const {data:allowed,error:permissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_quotes.manage"});
