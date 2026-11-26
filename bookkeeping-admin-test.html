@@ -130,10 +130,11 @@ async function confirmJournalAction(){
 
   $("workspace").classList.remove("hidden");
   $("entryDate").value=new Date().toISOString().slice(0,10);
+  await load();
+  $("entryPeriod").replaceChildren();
   periodsCache.forEach(p=>{const op=el("option","",p.period_name+" ("+p.status+")");op.value=p.id;$("entryPeriod").append(op);});
   $("entryPeriod").value=(periodsCache.find(p=>p.status==="open")||{}).id||"";
   if(canPrepare){addJournalLine();addJournalLine();}
-  await load();
  }catch(error){showMessage(error.message||"Bookkeeping access verification failed.","error");}
 }
 $("refresh").addEventListener("click",load);\n$("addLine").addEventListener("click",addJournalLine);$("submitJournal").addEventListener("click",submitJournal);$("confirmYes").addEventListener("click",confirmJournalAction);$("confirmNo").addEventListener("click",()=>{$("confirmPanel").classList.add("hidden");pendingAction=null;});
