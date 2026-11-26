@@ -58,3 +58,22 @@ Production grant inspection confirmed that the three existing quotation revision
 4. Verify production catalogue read policy/columns and use a safe, permission-scoped catalogue reader if direct client access is not appropriate.
 5. Add explicit role gating and post-migration function-grant assertions.
 6. Validate the release candidate in a disposable production-schema clone before any production execution.
+
+
+## 26 November editor integrity patch
+
+Committed frontend change `0cc5fd90ae` to `operations-standard-quotations-test.html`:
+
+- Preserves `source_proposal_id` and `replaces_item_id` for the primary and additional item rows when an existing draft is loaded and saved.
+- Preserves the primary item's specifications and sort order.
+- Identifies the primary product by `item_type='product'` rather than assuming the first returned item is the product.
+- Sorts returned items by `sort_order` before reconstruction.
+- Keeps the submitted-revision action explicitly gated; it does not call a function that is absent from the isolated test schema.
+
+## Revision workflow environment mismatch
+
+The existing `admin_create_direct_quotation_revision_v2(uuid)` function is confirmed in production and its complete logic was inspected. It is absent from the isolated test project. Therefore the current test workspace cannot safely demonstrate a full revision flow without first bringing over the complete dependency-compatible function and related schema/triggers. This is not a reason to invent a simplified revision RPC.
+
+## Verification status
+
+The editor patch is committed to the isolated test branch. It has not been run in a browser or exercised against live test records in this pass. Required next checks: static JavaScript syntax validation, browser smoke test using existing isolated test accounts, draft round-trip retaining alternative/replacement references, and database assertion that the item links remain unchanged after save. Production remains unchanged.
