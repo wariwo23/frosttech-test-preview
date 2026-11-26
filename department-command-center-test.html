@@ -31,34 +31,37 @@ main{max-width:1120px;margin:22px auto;padding:0 16px 38px}.panel,.card{backgrou
 (function(){
 "use strict";
 const db=window.supabaseClient,$=id=>document.getElementById(id);
-const roleDepartment={operations_admin:"operations",supplier_admin:"supplier",finance_admin:"finance",catalogue_admin:"catalogue"};
-const names={operations:"Operations",supplier:"Supplier Management",finance:"Finance & Tax",catalogue:"Catalogue & Product Management"};
+const roleDepartment={operations_admin:"operations",supplier_admin:"supplier_catalogue",catalogue_admin:"supplier_catalogue",finance_admin:"finance",advertisers_admin:"advertisers_communications"};
+const names={operations:"Operations & Customer Matters",supplier_catalogue:"Supplier & Catalogue Management",finance:"Finance, Payments & Tax",advertisers_communications:"Advertisers & Communications"};
 const descriptions={
- operations:"Customer requests, standard and direct quotations, orders, order items, delivery scheduling and customer contact records.",
- supplier:"Supplier applications, verification, supplier quotation review and supplier account workflows.",
- finance:"Financial reporting, payment visibility and reconciliation, quotation cost submissions, supplier settlements and tax administration.",
- catalogue:"Product listings, product information, images, selling prices, stock levels and product publication controls."
+ operations:"Customer requests, customer account oversight, standard and direct quotations, orders and deliveries.",
+ supplier_catalogue:"Supplier applications, verification, non-financial quotation review, supplier account workflows and catalogue management. Supplier-cost records and final supplier selection remain Super Administrator-only.",
+ finance:"Financial reporting, payments and reconciliation, bookkeeping, supplier settlement preparation and tax administration. Final settlement approval and tax rules remain Super Administrator-only.",
+ advertisers_communications:"Advertiser applications and documents, paid campaign review, advertising communications and campaign administration. Commercial package rules and payment authority remain Super Administrator-only."
 };
 const functionsByDepartment={
  operations:[
   {title:"Customer Requests, Orders & Deliveries",desc:"Review customer requests, operational quotations, orders, order items and delivery arrangements.",permission:["customer_requests.manage","orders.manage","deliveries.manage","quotations.read_operational"],href:"departmental-admin-test.html",kind:"workspace"},
   {title:"Standard & Direct Quotations",desc:"Prepare and manage independent customer quotations using the operational quotation permission.",permission:["quotations.read_operational"],href:"admin-independent-quotations-test.html",kind:"workspace"},
-  {title:"Customer Account Oversight",desc:"Customer account administration remains visible to the Super Administrator. A dedicated departmental customer-account workflow has not yet been ported into this test branch.",permission:["customer_requests.manage"],href:null,kind:"pending"}
+  {title:"Customer Account Oversight",desc:"Customer account administration remains visible to the Super Administrator until the departmental workflow is fully integrated.",permission:["customer_requests.manage"],href:null,kind:"pending"}
  ],
- supplier:[
-  {title:"Supplier Applications & Verification",desc:"View supplier applications and use review controls only when the separate review permission is present. Super Admin override remains reserved.",permission:["supplier_applications.read"],href:"supplier-applications-test.html",kind:"workspace"},
-  {title:"Supplier Quotations",desc:"Compare submitted supplier offers, review commercial terms and select or reject supplier quotations.",permission:["supplier_quotes.manage"],href:"supplier-quotations-test.html",kind:"workspace"},
-  {title:"Supplier Account Maintenance",desc:"Review approved supplier accounts, search account records, suspend or reactivate accounts with mandatory reasons, and inspect the permanent status audit history. Supplier costs remain protected.",permission:["supplier_applications.read"],href:"supplier-account-maintenance-test.html",kind:"workspace"}
+ supplier_catalogue:[
+  {title:"Supplier Applications & Verification",desc:"Review supplier applications and verification records within the authorised workflow.",permission:["supplier_applications.read"],href:"supplier-applications-test.html",kind:"workspace"},
+  {title:"Supplier Quotations — Non-financial Review",desc:"Non-financial completeness review is being integrated. Supplier prices, totals, delivery costs and final selection remain blocked pending protected server-side workflows.",permission:["supplier_quotes.review_nonfinancial"],href:null,kind:"pending"},
+  {title:"Supplier Account Maintenance",desc:"Review approved supplier accounts, account status and the permanent status audit history. Supplier costs remain protected.",permission:["supplier_applications.read"],href:"supplier-account-maintenance-test.html",kind:"workspace"},
+  {title:"Product Catalogue",desc:"Product details, images, categories, selling prices, stock and product activation.",permission:["catalogue.manage","products.manage","selling_prices.manage","stock.manage"],href:null,kind:"pending"},
+  {title:"Supplier Costs & Final Selection",desc:"Supplier costs, internal sourcing values and final cost-based supplier selection are reserved for the Super Administrator.",permission:[],href:null,kind:"reserved"}
  ],
  finance:[
   {title:"Financial Reporting & Payments",desc:"Financial summaries, payment records, financial quotation visibility and cost-submission workflow.",permission:["financial_reports.read","payments.read","quotations.read_financial","quotations.costs.submit"],href:"finance-admin-test.html",kind:"workspace"},
   {title:"Company Bookkeeping",desc:"FrostTech company accounts, journal register, expenses, shareholder loans and financial records, separate from marketplace transactions.",permission:["bookkeeping.read"],href:"bookkeeping-admin-test.html",kind:"workspace"},
   {title:"Tax Assessments, Remittances & Certificates",desc:"Tax assessments, remittance evidence, supplier tax profiles and certificates. Tax rules and rates remain Super Administrator-only.",permission:["tax.assessments.read","tax.assessments.manage","tax.remittances.manage","tax.supplier_profiles.read","tax.supplier_profiles.manage","tax.certificates.manage","tax.rules.read"],href:"tax-admin-test.html",kind:"workspace"},
-  {title:"Supplier Settlement Preparation & Execution",desc:"Prepare and submit settlements and perform only separately authorised execution tasks. Super Administrator approval and rejection are not part of this departmental workspace.",permission:["supplier_settlements.read","supplier_settlements.prepare","supplier_settlements.execute"],href:"finance-admin-test.html",kind:"workspace"}
+  {title:"Supplier Settlement Preparation",desc:"Prepare and document supplier settlements. Final approval, rejection and disbursement authority remain reserved.",permission:["supplier_settlements.read","supplier_settlements.prepare"],href:"finance-admin-test.html",kind:"workspace"}
  ],
- catalogue:[
-  {title:"Product Catalogue",desc:"Product details, images, categories, selling prices, stock and product activation.",permission:["catalogue.manage","products.manage","selling_prices.manage","stock.manage"],href:null,kind:"pending"},
-  {title:"Supplier Costs",desc:"Supplier costs and internal sourcing values remain exclusively available to the Super Administrator.",permission:[],href:null,kind:"reserved"}
+ advertisers_communications:[
+  {title:"Advertiser Applications & Documents",desc:"Advertiser onboarding, business-document review and advertiser account records are awaiting test data-model integration.",permission:["advertisers.manage","advertiser_documents.review"],href:null,kind:"pending"},
+  {title:"Paid Advertising Campaign Review",desc:"Review and approve only successfully paid Development/Test campaigns. The test database does not yet contain the advertising tables or review function.",permission:["advertisements.review"],href:null,kind:"pending"},
+  {title:"Communications & Notifications",desc:"Departmental communications and notification administration are awaiting the isolated test workflow integration.",permission:["communications.manage","notifications.manage"],href:null,kind:"pending"}
  ]
 };
 function responsibilityIcon(title){
