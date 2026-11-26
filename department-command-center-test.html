@@ -48,7 +48,7 @@ const functionsByDepartment={
  supplier:[
   {title:"Supplier Applications & Verification",desc:"View supplier applications and use review controls only when the separate review permission is present. Super Admin override remains reserved.",permission:["supplier_applications.read"],href:"supplier-applications-test.html",kind:"workspace"},
   {title:"Supplier Quotations",desc:"Compare submitted supplier offers, review commercial terms and select or reject supplier quotations.",permission:["supplier_quotes.manage"],href:"supplier-quotations-test.html",kind:"workspace"},
-  {title:"Supplier Account Maintenance",desc:"Supplier account-wide maintenance and protected supplier-cost information remain under Super Administrator control.",permission:["supplier_applications.manage"],href:null,kind:"pending"}
+  {title:"Supplier Account Maintenance",desc:"Review approved supplier accounts, search account records, suspend or reactivate accounts with mandatory reasons, and inspect the permanent status audit history. Supplier costs remain protected.",permission:["supplier_applications.read"],href:"supplier-account-maintenance-test.html",kind:"workspace"}
  ],
  finance:[
   {title:"Financial Reporting & Payments",desc:"Financial summaries, payment records, financial quotation visibility and cost-submission workflow.",permission:["financial_reports.read","payments.read","quotations.read_financial","quotations.costs.submit"],href:"finance-admin-test.html",kind:"workspace"},
