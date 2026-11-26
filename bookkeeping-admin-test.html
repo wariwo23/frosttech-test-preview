@@ -21,7 +21,7 @@
 <section class="card"><h2>Accounting period</h2><div id="periodInfo" class="message">Loading accounting period…</div></section>
 <section class="card"><h2>Bookkeeping control summary</h2><p class="muted">Only posted journal entries form the official ledger balances. Draft entries remain pending and are displayed separately below.</p><div id="metrics" class="grid"></div></section>
 <section class="card" id="journalPreparation"><h2>Prepare Journal Entry</h2><p class="muted">Finance Admin prepares and submits journals. Submission does not post to the ledger.</p><div id="prepareAccess" class="message">Checking access…</div><div id="journalForm" class="hidden"><p><label>Entry date <input id="entryDate" class="field" type="date"></label></p><p><label>Accounting period <select id="entryPeriod" class="field"></select></label></p><p><label>Description <input id="entryDescription" class="field" maxlength="240"></label></p><p><label>Source reference (optional) <input id="entryReference" class="field" maxlength="100"></label></p><div id="entryLines"></div><div class="toolbar"><button id="addLine" type="button" class="secondary">Add line</button><strong id="entryTotals">Debits ₦0.00 · Credits ₦0.00</strong></div><p><button id="submitJournal" type="button">Save and Submit for Review</button></p><p id="formMessage" class="message">At least two lines are required; total debits must equal total credits.</p></div></section>
-<section class="card"><h2>Super Administrator Review &amp; Posting</h2><p class="muted">Approval and posting are separate actions. Only posted journals enter official ledger reports.</p><div id="approvalAccess" class="message">Checking access…</div><div id="approvalQueue"></div><div id="confirmPanel" class="card hidden"><strong id="confirmText">Confirm action</strong><p class="toolbar"><button id="confirmYes" type="button">Confirm</button><button id="confirmNo" type="button" class="secondary">Cancel</button></p></div></section><section class="card"><h2>Chart of Accounts</h2><div id="accounts"></div></section>
+<section class="card"><h2>Super Administrator Review &amp; Posting</h2><p class="muted">Approval and posting are separate actions. Only posted journals enter official ledger reports.</p><div id="approvalAccess" class="message">Checking access…</div><div id="approvalQueue"></div><div id="confirmPanel" class="card hidden"><strong id="confirmText">Confirm action</strong><p class="toolbar"><button id="confirmYes" type="button">Confirm</button><button id="confirmNo" type="button" class="secondary">Cancel</button></p></div></section><section class="card" id="financialReports"><h2>Financial Reports</h2><p class="muted">Reports are calculated exclusively from posted journal entries. Draft, submitted, approved-but-unposted and rejected entries are excluded.</p><p><label>Reporting period <select id="reportPeriod" class="field"></select></label> <button id="runReports" type="button">Refresh Reports</button></p><div id="reportNotice" class="message">Reports have not yet been calculated.</div><h3>Trial Balance</h3><div id="trialBalance"></div><h3>Profit &amp; Loss</h3><div id="profitLoss"></div><h3>Balance Sheet</h3><div id="balanceSheet"></div><h3>Bank Cash Movement</h3><div id="cashFlow"></div></section><section class="card"><h2>Chart of Accounts</h2><div id="accounts"></div></section>
 <section class="card"><h2>Journal Register</h2><div id="journals"></div></section>
 <section class="card"><h2>Expense Register</h2><div id="expenses"></div></section>
 <section class="card"><h2>Shareholder Loan Register</h2><div id="loans"></div></section>
@@ -51,7 +51,8 @@ async function load(){
    db.from("ft_bookkeeping_shareholder_loans").select("lender_name,principal_amount,interest_rate,amount_repaid,repayment_terms,status,agreement_date").order("created_at",{ascending:false})
   ]);
   for(const result of [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult])if(result.error)throw result.error;
-  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[];\n  accountsCache=accounts;periodsCache=periods;journalsCache=journals;linesCache=lines;
+  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[];
+  accountsCache=accounts;periodsCache=periods;journalsCache=journals;linesCache=lines;
   const active=accounts.filter(a=>a.is_active);
   renderTable($("accounts"),["Code","Account","Type","Status"],active.map(a=>[a.code,a.name,a.account_type,"Active"]),"No active accounts.");
   const period=periods[0];
@@ -67,6 +68,34 @@ async function load(){
   renderApprovalQueue();showMessage("Bookkeeping records loaded. Only approved and posted journals affect official ledger balances.","success");
  }catch(error){console.error(error);showMessage(error.message||"Unable to load bookkeeping records.","error");}
  finally{$("refresh").disabled=false;}
+}
+
+
+function populateReportPeriods(){
+ const select=$("reportPeriod");select.replaceChildren();
+ periodsCache.forEach(p=>{const o=el("option","",p.period_name+" · "+p.start_date+" to "+p.end_date);o.value=p.id;select.append(o);});
+ const current=periodsCache.find(p=>p.status==="open")||periodsCache[0];if(current)select.value=current.id;
+}
+function calculateReports(){
+ const period=periodsCache.find(p=>p.id===$("reportPeriod").value);
+ if(!period){$("reportNotice").textContent="No accounting period is available.";return;}
+ const posted=journalsCache.filter(j=>j.status==="posted"&&j.entry_date>=period.start_date&&j.entry_date<=period.end_date);
+ const ids=new Set(posted.map(j=>j.id));
+ const accountMap=new Map(accountsCache.map(a=>[a.id,a]));
+ const totals=new Map();
+ linesCache.filter(l=>ids.has(l.journal_id)).forEach(l=>{const a=accountMap.get(l.account_id);if(!a)return;const t=totals.get(a.id)||{debit:0,credit:0};t.debit+=Number(l.debit||0);t.credit+=Number(l.credit||0);totals.set(a.id,t);});
+ const rows=accountsCache.filter(a=>a.is_active).map(a=>{const t=totals.get(a.id)||{debit:0,credit:0};const net=t.debit-t.credit;return {...a,...t,net,debitBalance:Math.max(net,0),creditBalance:Math.max(-net,0)};});
+ const sum=(arr,key)=>arr.reduce((s,x)=>s+x[key],0);
+ renderTable($("trialBalance"),["Code","Account","Type","Debit Balance","Credit Balance"],rows.map(a=>[a.code,a.name,a.account_type,money(a.debitBalance),money(a.creditBalance)]),"No accounts available.");
+ const income=rows.filter(a=>a.account_type==="income"),expense=rows.filter(a=>a.account_type==="expense");
+ const incomeTotal=sum(income,"credit")-sum(income,"debit"),expenseTotal=sum(expense,"debit")-sum(expense,"credit"),netResult=incomeTotal-expenseTotal;
+ renderTable($("profitLoss"),["Description","Amount"],[...income.map(a=>[a.name,money(a.credit-a.debit)]),["Total Income",money(incomeTotal)],...expense.map(a=>[a.name,money(a.debit-a.credit)]),["Total Expenses",money(expenseTotal)],["Net Profit / (Loss)",money(netResult)]],"No income or expense accounts.");
+ const assets=rows.filter(a=>a.account_type==="asset"),liabilities=rows.filter(a=>a.account_type==="liability"),equity=rows.filter(a=>a.account_type==="equity");
+ const assetTotal=sum(assets,"net"),liabilityTotal=-sum(liabilities,"net"),equityTotal=-sum(equity,"net"),equityPlusResult=equityTotal+netResult,liabilitiesAndEquity=liabilityTotal+equityPlusResult;
+ renderTable($("balanceSheet"),["Description","Amount"],[...assets.map(a=>[a.name,money(a.net)]),["Total Assets",money(assetTotal)],...liabilities.map(a=>[a.name,money(-a.net)]),["Total Liabilities",money(liabilityTotal)],...equity.map(a=>[a.name,money(-a.net)]),["Current Period Profit / (Loss)",money(netResult)],["Total Equity including current result",money(equityPlusResult)],["Total Liabilities & Equity",money(liabilitiesAndEquity)],["Balance Check (Assets less Liabilities & Equity)",money(assetTotal-liabilitiesAndEquity)]],"No balance sheet accounts.");
+ const bank=rows.filter(a=>a.code==="1000"),bankDebits=sum(bank,"debit"),bankCredits=sum(bank,"credit");
+ renderTable($("cashFlow"),["Description","Amount"],[["Recorded bank debits / receipts",money(bankDebits)],["Recorded bank credits / payments",money(bankCredits)],["Net recorded bank movement",money(bankDebits-bankCredits)]],"Corporate bank account (1000) not configured.");
+ $("reportNotice").textContent=posted.length?posted.length+" posted journal(s) included for "+period.period_name+". All unposted entries are excluded.":"No posted journals exist in "+period.period_name+". Reports correctly show zero activity; draft opening transactions are not included.";
 }
 
 function addJournalLine(){
@@ -111,7 +140,8 @@ async function confirmJournalAction(){
  catch(e){$("approvalAccess").textContent="Action not completed: "+(e.message||"Unknown error");}
  finally{$("confirmYes").disabled=false;}
 }
-\nasync function init(){
+
+async function init(){
  try{
   if(!db?.auth)throw new Error("The isolated test database client did not load.");
   const {data:{session},error:sessionError}=await db.auth.getSession();if(sessionError)throw sessionError;
@@ -131,13 +161,16 @@ async function confirmJournalAction(){
   $("workspace").classList.remove("hidden");
   $("entryDate").value=new Date().toISOString().slice(0,10);
   await load();
+  populateReportPeriods();calculateReports();
   $("entryPeriod").replaceChildren();
   periodsCache.forEach(p=>{const op=el("option","",p.period_name+" ("+p.status+")");op.value=p.id;$("entryPeriod").append(op);});
   $("entryPeriod").value=(periodsCache.find(p=>p.status==="open")||{}).id||"";
   if(canPrepare){addJournalLine();addJournalLine();}
  }catch(error){showMessage(error.message||"Bookkeeping access verification failed.","error");}
 }
-$("refresh").addEventListener("click",load);\n$("addLine").addEventListener("click",addJournalLine);$("submitJournal").addEventListener("click",submitJournal);$("confirmYes").addEventListener("click",confirmJournalAction);$("confirmNo").addEventListener("click",()=>{$("confirmPanel").classList.add("hidden");pendingAction=null;});
+$("refresh").addEventListener("click",load);
+$("runReports").addEventListener("click",calculateReports);$("reportPeriod").addEventListener("change",calculateReports);
+$("addLine").addEventListener("click",addJournalLine);$("submitJournal").addEventListener("click",submitJournal);$("confirmYes").addEventListener("click",confirmJournalAction);$("confirmNo").addEventListener("click",()=>{$("confirmPanel").classList.add("hidden");pendingAction=null;});
 $("signOut").addEventListener("click",async()=>{const {error}=await db.auth.signOut();if(error){showMessage(error.message,"error");return;}location.href="test-admin-login.html";});
 init();
 </script>
