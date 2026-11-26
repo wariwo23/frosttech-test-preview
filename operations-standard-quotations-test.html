@@ -101,7 +101,7 @@ textarea{min-height:72px;resize:vertical}.grid{display:grid;grid-template-column
 const db=window.supabaseClient;
 const $=id=>document.getElementById(id);
 const money=value=>new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(Number(value||0));
-let currentRole=null,readOnly=false,requests=[],products=[],quotes=[],editingId=null,extraSequence=0;
+let currentRole=null,readOnly=false,requests=[],products=[],quotes=[],editingId=null,primaryItemMeta={source_proposal_id:null,replaces_item_id:null,sort_order:0};
 
 function status(id,message,type="normal"){
   const el=$(id);el.textContent=message;
@@ -147,7 +147,7 @@ function getExtraItems(){
  const out=[];
  document.querySelectorAll("#extraRows tr").forEach((tr,i)=>{
   const val=f=>tr.querySelector('[data-field="'+f+'"]').value;
-  out.push({item_type:val("type"),product_id:null,description:val("description").trim(),specifications:{},unit:val("unit").trim(),quantity:Number(val("qty")),unit_price:Number(val("price")),sort_order:i+1,source_proposal_id:null,replaces_item_id:null});
+  out.push({item_type:val("type"),product_id:null,description:val("description").trim(),specifications:{},unit:val("unit").trim(),quantity:Number(val("qty")),unit_price:Number(val("price")),sort_order:Number(tr.dataset.sortOrder||i+1),source_proposal_id:tr.dataset.sourceProposalId||null,replaces_item_id:tr.dataset.replacesItemId||null});
  });
  return out;
 }
@@ -161,12 +161,12 @@ function getPayload(){
  if(!requestId)throw new Error("Select a customer request first.");
  if(!description||!unit||!Number.isInteger(quantity)||quantity<=0||!Number.isFinite(unitPrice)||unitPrice<0)throw new Error("Complete the main product description, unit, quantity and valid unit price.");
  if(t.additional<0||t.discount<0||t.discount>t.subtotal+t.additional)throw new Error("Discount cannot exceed product subtotal plus additional charges.");
- const items=[{item_type:"product",product_id:$("productSelect").value||null,description,specifications:{},unit,quantity,unit_price:unitPrice,sort_order:0,source_proposal_id:null,replaces_item_id:null},...getExtraItems()];
+ const items=[{item_type:"product",product_id:$("productSelect").value||null,description,specifications:primaryItemMeta.specifications||{},unit,quantity,unit_price:unitPrice,sort_order:Number(primaryItemMeta.sort_order??0),source_proposal_id:primaryItemMeta.source_proposal_id||null,replaces_item_id:primaryItemMeta.replaces_item_id||null},...getExtraItems()];
  if(items.some(x=>!x.description||!x.unit||!Number.isFinite(x.quantity)||x.quantity<=0||!Number.isFinite(x.unit_price)||x.unit_price<0))throw new Error("Complete every additional item with a description, unit, positive quantity and valid price.");
  return {p_request_id:requestId,p_quotation_id:editingId,p_product_description:description,p_quantity:quantity,p_unit_price:unitPrice,p_delivery_cost:t.delivery,p_additional_charges:t.additional,p_discount:t.discount,p_validity_date:$("validity").value||null,p_notes:$("notes").value.trim()||null,p_items:items};
 }
 function resetForm(){
- editingId=null;$("formTitle").textContent="Prepare Standard Quotation";$("requestSelect").disabled=false;
+ editingId=null;primaryItemMeta={source_proposal_id:null,replaces_item_id:null,sort_order:0};$("formTitle").textContent="Prepare Standard Quotation";$("requestSelect").disabled=false;
  $("requestSelect").value="";$("productSelect").value="";$("productDescription").value="";$("unit").value="unit";
  $("quantity").value="1";$("unitPrice").value="0";$("delivery").value="0";$("discount").value="0";
  $("validity").value="";$("notes").value="";$("extraRows").replaceChildren();calc();
@@ -212,7 +212,7 @@ async function loadQuotes(){
   }else td.textContent="Record only";
   tr.appendChild(td);body.appendChild(tr);
  });
- status("quoteStatus",quotes.length+" quotation record(s) loaded. Only drafts can be edited.","success");
+ status("quoteStatus",quotes.length+" quotation record(s) loaded. Draft editing is available; submitted-version revision remains gated until the original revision RPC is available and verified in this isolated environment.","success");
 }
 async function selectRequest(){
  const r=requests.find(x=>x.id===$("requestSelect").value);
@@ -238,10 +238,15 @@ async function editDraft(id){
   $("validity").value=q.validity_date||"";$("notes").value=q.notes||"";
   $("unit").value="unit";
   $("extraRows").replaceChildren();
-  (data.items||[]).forEach((item,i)=>{
-   if(i===0){$("productDescription").value=item.description;$("unit").value=item.unit;$("quantity").value=item.quantity;$("unitPrice").value=item.unit_price;if(item.product_id)$("productSelect").value=item.product_id;}
-   else addExtra(item);
-  });
+  const orderedItems=[...(data.items||[])].sort((a,b)=>(Number(a.sort_order)||0)-(Number(b.sort_order)||0));
+  const primaryIndex=Math.max(0,orderedItems.findIndex(item=>item.item_type==="product"));
+  const primaryItem=orderedItems[primaryIndex];
+  if(primaryItem){
+   primaryItemMeta={source_proposal_id:primaryItem.source_proposal_id||null,replaces_item_id:primaryItem.replaces_item_id||null,sort_order:Number(primaryItem.sort_order??0),specifications:primaryItem.specifications||{}};
+   $("productDescription").value=primaryItem.description;$("unit").value=primaryItem.unit;$("quantity").value=primaryItem.quantity;$("unitPrice").value=primaryItem.unit_price;
+   if(primaryItem.product_id)$("productSelect").value=primaryItem.product_id;
+  }
+  orderedItems.forEach((item,i)=>{if(i!==primaryIndex)addExtra(item);});
   calc();status("formStatus","Draft loaded. You may edit and save it again, or submit when ready.","success");
   $("formTitle").scrollIntoView({behavior:"smooth"});
  }catch(e){status("formStatus",e.message||"Could not load draft.","error");}
