@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supplier Account Maintenance | FrostTech TEST</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#17324e;font:15px/1.5 Arial,sans-serif}
+header{background:linear-gradient(120deg,#102b4e,#087f8c);color:#fff;padding:18px 14px}
+.head,main{width:min(1120px,calc(100% - 22px));margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(20px,4vw,27px);margin:0}header p{margin:4px 0 0;color:#e2f1f7;font-size:13px}
+.toolbar,.actions,.filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,select,input,textarea{font:inherit}button{border:0;border-radius:8px;padding:10px 13px;font-weight:bold;cursor:pointer;background:#087f8c;color:white}
+button.secondary{background:#e2e8f0;color:#17324e}button.danger{background:#b91c1c}button:disabled{opacity:.55;cursor:not-allowed}
+main{padding:16px 0 34px}.panel,.supplier{background:#fff;border:1px solid #dbe4ed;border-radius:12px;padding:16px;margin:12px 0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h2{margin:0 0 7px;font-size:19px;color:#123c63}.muted{color:#64748b;font-size:13px}
+#message{display:none;padding:11px 13px;border-radius:8px;margin:12px 0;overflow-wrap:anywhere}
+#message.info{display:block;background:#e0f2fe;color:#075985}#message.success{display:block;background:#dcfce7;color:#166534}#message.error{display:block;background:#fee2e2;color:#991b1b}
+.pill{display:inline-block;padding:5px 9px;border-radius:30px;background:#e2e8f0;font-size:11px;font-weight:bold}
+.pill.active{background:#dcfce7;color:#166534}.pill.suspended{background:#fee2e2;color:#991b1b}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.metric{background:#f7fafc;border:1px solid #e2e8f0;border-radius:9px;padding:12px}.metric strong{display:block;font-size:23px;color:#0b4778}
+.filters{margin-top:12px}.filters input{flex:1;min-width:180px}.filters select,.filters input{padding:10px;border:1px solid #cbd5e1;border-radius:7px;background:white}
+.details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 15px;margin:14px 0}.details div{overflow-wrap:anywhere}.details strong{display:block;color:#64748b;font-size:11px}
+.actions{margin-top:12px}.actions button{min-width:145px}
+.history{margin-top:12px;border-top:1px solid #e2e8f0;padding-top:10px}.history summary{cursor:pointer;font-weight:bold;color:#0b4778}.event{padding:9px 0;border-bottom:1px solid #edf2f7;font-size:13px}
+footer{text-align:center;color:#64748b;font-size:12px;padding:0 12px 22px}
+.backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:16px;background:#071b31b8;z-index:20}.backdrop.open{display:flex}
+.modal{background:white;border-radius:13px;padding:20px;width:min(100%,480px);box-shadow:0 15px 45px #0004}.modal h2{margin:0 0 8px}.modal label{display:block;font-weight:bold;font-size:13px;margin:12px 0 6px}.modal textarea{width:100%;min-height:100px;resize:vertical;padding:10px;border:1px solid #cbd5e1;border-radius:7px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+@media(max-width:580px){.details{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.panel,.supplier{padding:12px}.toolbar button{padding:9px}.actions button{width:100%}.filters{align-items:stretch}.filters input,.filters select{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>FrostTech HVAC and Refrigeration</h1><p>Supplier Account Maintenance — Isolated Test Workspace</p></div><div class="toolbar"><button id="refresh">Refresh</button><button id="back" class="secondary">Back to Command Center</button><button id="logout" class="secondary">Sign Out</button></div></div></header>
+<main>
+<section class="panel"><div class="top"><div><h2>Approved supplier accounts</h2><div class="muted" id="identity">Verifying administrator access…</div></div><span class="pill">TEST ONLY</span></div>
+<p class="muted">Manage the active status of approved and verified supplier accounts. Every suspension or reactivation requires a reason and creates a permanent test audit record. Application approval status is not changed.</p>
+<div id="message" role="status" aria-live="polite"></div>
+<div class="metrics"><div class="metric"><strong id="totalCount">—</strong><span class="muted">Approved accounts</span></div><div class="metric"><strong id="activeCount">—</strong><span class="muted">Active</span></div><div class="metric"><strong id="suspendedCount">—</strong><span class="muted">Suspended</span></div></div>
+<div class="filters"><input id="search" type="search" placeholder="Search business, contact or email"><select id="status"><option value="all">All account statuses</option><option value="active">Active accounts</option><option value="suspended">Suspended accounts</option></select></div>
+</section>
+<section id="supplierList" aria-live="polite"><p class="panel muted">Loading supplier accounts…</p></section>
+</main>
+<div class="backdrop" id="reasonModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+ <div class="modal"><h2 id="modalTitle">Confirm account status change</h2><p id="modalDescription" class="muted"></p>
+ <label for="reason">Reason (required, minimum 5 characters)</label><textarea id="reason" maxlength="1000" placeholder="Enter the reason for this account status change"></textarea>
+ <div class="modal-actions"><button id="cancelChange" class="secondary">Cancel</button><button id="confirmChange">Confirm change</button></div></div>
+</div>
+<footer>Isolated test environment only. No production data, supplier prices, customer totals or payments are affected.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script>
+<script>
+(function(){
+"use strict";
+const db=window.supabaseClient,$=id=>document.getElementById(id);
+let role=null,canManage=false,accounts=[],pending=null,busy=false;
+function message(t,type="info"){const n=$("message");n.textContent=t;n.className=type;}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function fmt(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleString("en-NG");}
+function metrics(){ $("totalCount").textContent=accounts.length;$("activeCount").textContent=accounts.filter(x=>x.account_active).length;$("suspendedCount").textContent=accounts.filter(x=>!x.account_active).length; }
+function render(){
+ const term=$("search").value.trim().toLowerCase(),status=$("status").value;
+ const rows=accounts.filter(a=>(status==="all"||(status==="active"&&a.account_active)||(status==="suspended"&&!a.account_active))&&[a.business_name,a.contact_name,a.email,a.phone].some(v=>String(v||"").toLowerCase().includes(term)));
+ const root=$("supplierList");root.replaceChildren();
+ if(!rows.length){root.append(Object.assign(document.createElement("p"),{className:"panel muted",textContent:"No approved supplier accounts match this filter."}));return;}
+ rows.forEach(a=>{
+  const card=document.createElement("article");card.className="supplier";
+  const top=document.createElement("div");top.className="top";
+  const title=document.createElement("strong");title.textContent=a.business_name;
+  const pill=document.createElement("span");pill.className="pill "+(a.account_active?"active":"suspended");pill.textContent=a.account_active?"ACTIVE":"SUSPENDED";
+  top.append(title,pill);card.append(top);
+  const grid=document.createElement("div");grid.className="details";
+  const fields=[["Contact person",a.contact_name],["Business email",a.email],["Phone",a.phone],["Location",[a.address,a.city,a.state].filter(Boolean).join(", ")],["Email verified",a.email_verified?"Yes":"No"],["Approved supplier account","Yes"],["Account created",fmt(a.account_created_at)],["Last updated",fmt(a.account_updated_at)],["Last status reason",a.last_status_reason||"No suspension/reactivation event recorded"],["Last status change",fmt(a.last_status_changed_at)]];
+  fields.forEach(([label,value])=>{const d=document.createElement("div"),s=document.createElement("strong");s.textContent=label;d.append(s,document.createTextNode(value||"—"));grid.append(d);});card.append(grid);
+  if(canManage){const actions=document.createElement("div");actions.className="actions";const b=document.createElement("button");b.className=a.account_active?"danger":"primary";b.textContent=a.account_active?"Suspend supplier account":"Reactivate supplier account";b.addEventListener("click",()=>openChange(a));actions.append(b);card.append(actions);}
+  const details=document.createElement("details");details.className="history";const summary=document.createElement("summary");summary.textContent="View account status audit history";details.append(summary);
+  const hist=document.createElement("div");hist.className="muted";hist.textContent="Loading history…";details.append(hist);details.addEventListener("toggle",()=>{if(details.open&&!details.dataset.loaded){details.dataset.loaded="1";loadHistory(a.supplier_id,hist);}});
+  card.append(details);root.append(card);
+ });
+}
+async function loadHistory(id,root){
+ const {data,error}=await db.rpc("admin_list_supplier_account_status_events",{p_supplier_id:id});
+ if(error){root.textContent=error.message;return;}
+ root.replaceChildren();
+ if(!data?.length){root.textContent="No suspension or reactivation events recorded for this supplier.";return;}
+ data.forEach(e=>{const d=document.createElement("div");d.className="event";d.textContent=fmt(e.changed_at)+" · "+e.previous_status.toUpperCase()+" → "+e.new_status.toUpperCase()+" · "+e.actor_role.replaceAll("_"," ")+" · "+e.reason;root.append(d);});
+}
+async function load(){
+ if(busy)return;busy=true;$("supplierList").innerHTML='<p class="panel muted">Loading supplier accounts…</p>';
+ try{const {data,error}=await db.rpc("admin_list_supplier_accounts",{p_status:"all"});if(error)throw error;accounts=Array.isArray(data)?data:[];metrics();render();message("Supplier account register loaded. No account status has been changed.","success");}
+ catch(e){message(e.message||"Supplier accounts could not be loaded.","error");}
+ finally{busy=false;}
+}
+function openChange(a){pending=a;const next=!a.account_active;$("modalTitle").textContent=next?"Reactivate Supplier Account":"Suspend Supplier Account";$("modalDescription").textContent=(next?"Reactivate ":"Suspend ")+a.business_name+"? The linked supplier profile will receive the same active status. The application approval record will remain unchanged."; $("reason").value="";$("reasonModal").classList.add("open");$("reason").focus();}
+function closeModal(){$("reasonModal").classList.remove("open");pending=null;}
+async function confirmChange(){
+ if(!pending||busy)return;const reason=$("reason").value.trim();if(reason.length<5){message("Please provide a reason of at least 5 characters.","error");$("reason").focus();return;}
+ const a=pending,activate=!a.account_active;$("confirmChange").disabled=true;$("cancelChange").disabled=true;
+ try{const {data,error}=await db.rpc("admin_set_supplier_account_status",{p_supplier_id:a.supplier_id,p_active:activate,p_reason:reason});if(error)throw error;if(!data?.success)throw new Error("The database did not confirm the account status change.");closeModal();message("Account "+(activate?"reactivated":"suspended")+" successfully. Audit event recorded. Reference: "+data.event_id,"success");await load();}
+ catch(e){message(e.message||"The account status change failed.","error");}
+ finally{$("confirmChange").disabled=false;$("cancelChange").disabled=false;}
+}
+async function init(){
+ if(!db?.auth){message("Test authentication service did not load.","error");return;}
+ const {data,error}=await db.auth.getSession();if(error||!data.session){location.replace("test-admin-login.html?access=super&return=supplier-account-maintenance-test.html");return;}
+ try{const {data:myRole,error:roleError}=await db.rpc("admin_get_my_role");if(roleError)throw roleError;
+ if(!["super_admin","supplier_admin"].includes(myRole)){message("Access denied. This workspace is reserved for the Supplier Administrator and Super Administrator.","error");$("identity").textContent="Access denied";return;}
+ role=myRole;const {data:read, error:readError}=await db.rpc("admin_has_permission",{required_permission:"supplier_applications.read"});if(readError)throw readError;if(read!==true)throw new Error("Supplier account read permission is required.");
+ const {data:manage,error:manageError}=await db.rpc("admin_has_permission",{required_permission:"supplier_applications.manage"});if(manageError)throw manageError;canManage=manage===true;
+ $("identity").textContent=(data.session.user.email||"Administrator")+" · "+role.replaceAll("_"," ").toUpperCase()+(canManage?" · ACCOUNT MANAGEMENT":" · READ ONLY");
+ if(!canManage)message("Read-only oversight mode. Account status changes are not enabled for this role.");
+ await load();
+ }catch(e){message(e.message||"Administrator access could not be verified.","error");}
+}
+$("refresh").addEventListener("click",load);$("search").addEventListener("input",render);$("status").addEventListener("change",render);
+$("confirmChange").addEventListener("click",confirmChange);$("cancelChange").addEventListener("click",closeModal);
+$("reasonModal").addEventListener("click",e=>{if(e.target===$("reasonModal"))closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+$("back").addEventListener("click",()=>location.href=role==="super_admin"?"super-admin-command-center-test.html":"department-command-center-test.html?department=supplier");
+$("logout").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){message(error.message,"error");return;}location.replace("test-admin-login.html?access=super");});
+init();
+})();
+</script>
+</body></html>
