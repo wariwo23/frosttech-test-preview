@@ -574,7 +574,7 @@
         // the permanent administrator account or an authorised isolated-test grant.
         const { data: role, error: roleError } = await db.rpc("admin_get_my_role");
         if (roleError) throw roleError;
-        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin", "catalogue_admin"].includes(role) ? role : null;
+        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin", "catalogue_admin", "advertisers_admin"].includes(role) ? role : null;
       }
 
       async function showLoginOrActiveSession() {
