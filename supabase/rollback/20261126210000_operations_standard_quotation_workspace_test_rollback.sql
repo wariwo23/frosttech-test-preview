@@ -1,6 +1,10 @@
--- Emergency rollback: FrostTech Operations standard quotation workspace (isolated test only).
--- Restores the prior Operations request-list RPC definition and removes only
--- the permission and functions introduced by this workspace migration.
+-- Controlled rollback: FrostTech Operations standard quotation workspace.
+-- ISOLATED TEST PROJECT ONLY. Never apply to production.
+-- Removes only the three workspace RPCs and the permission introduced by the
+-- workspace migration. Keeps the Finance-field redaction in the request-list
+-- RPC; deliberately does NOT restore the earlier full-row data exposure.
+
+begin;
 
 drop function if exists public.ops_submit_standard_quotation_v1(uuid);
 drop function if exists public.ops_save_standard_quotation_draft_v1(uuid,uuid,text,integer,numeric,numeric,numeric,numeric,date,text,jsonb);
@@ -21,7 +25,13 @@ begin
   end if;
 
   select coalesce(
-    jsonb_agg(to_jsonb(q) order by q.created_at desc),
+    jsonb_agg(
+      to_jsonb(q) - array[
+        'admin_fee','admin_fee_status',
+        'admin_fee_transaction_reference','admin_fee_paid_at'
+      ]::text[]
+      order by q.created_at desc
+    ),
     '[]'::jsonb
   )
   into result
@@ -36,9 +46,11 @@ begin
 end;
 $function$;
 
-revoke all on function public.ops_list_customer_requests() from public,anon;
+revoke all on function public.ops_list_customer_requests() from public, anon, authenticated;
 grant execute on function public.ops_list_customer_requests() to authenticated;
 
 delete from public.admin_role_permissions
 where role='operations_admin'
   and permission='quotations.manage_operational';
+
+commit;
