@@ -65,3 +65,15 @@ The department command center now links the Advertisers & Communications adminis
 ## Change boundary
 
 This stage did not replace legacy RLS policies in production, alter production package pricing, change production payment configuration, or deploy any test Edge Function to production. Existing test advertiser and document records were preserved.
+
+## Verification snapshot
+
+- Nine active package rows are present at the nine approved prices.
+- All nine advertising tables have RLS enabled.
+- Advertiser and reviewer functions are SECURITY DEFINER with an empty search path; anonymous execution is revoked and authenticated execution is granted.
+- The private advertiser document bucket is confirmed private, limited to 10 MB PDF/JPEG/PNG uploads.
+- Super Administrator permission simulation: advertiser and campaign review permissions allowed.
+- Operations Administrator permission simulation: advertiser and campaign review permissions denied.
+- Test project currently has zero advertiser, document, campaign, order and payment rows; no real payment or approval test has been fabricated.
+- Five test Edge Functions are active with JWT verification enabled.
+- The preflight function is configured to expect the test preview callback path, not the production site.
