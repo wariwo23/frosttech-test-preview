@@ -52,6 +52,7 @@ const functionsByDepartment={
  ],
  finance:[
   {title:"Financial Reporting & Payments",desc:"Financial summaries, payment records, financial quotation visibility and cost-submission workflow.",permission:["financial_reports.read","payments.read","quotations.read_financial","quotations.costs.submit"],href:"finance-admin-test.html",kind:"workspace"},
+  {title:"Company Bookkeeping",desc:"FrostTech company accounts, journal register, expenses, shareholder loans and financial records, separate from marketplace transactions.",permission:["bookkeeping.read"],href:"bookkeeping-admin-test.html",kind:"workspace"},
   {title:"Tax Assessments, Remittances & Certificates",desc:"Tax assessments, remittance evidence, supplier tax profiles and certificates. Tax rules and rates remain Super Administrator-only.",permission:["tax.assessments.read","tax.assessments.manage","tax.remittances.manage","tax.supplier_profiles.read","tax.supplier_profiles.manage","tax.certificates.manage","tax.rules.read"],href:"tax-admin-test.html",kind:"workspace"},
   {title:"Supplier Settlement Preparation & Execution",desc:"Prepare and submit settlements and perform only separately authorised execution tasks. Super Administrator approval and rejection are not part of this departmental workspace.",permission:["supplier_settlements.read","supplier_settlements.prepare","supplier_settlements.execute"],href:"finance-admin-test.html",kind:"workspace"}
  ],
