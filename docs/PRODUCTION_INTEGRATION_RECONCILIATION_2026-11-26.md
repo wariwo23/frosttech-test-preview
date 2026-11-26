@@ -66,3 +66,31 @@ The prior fee-basis smoke test passed with a subtotal of ₦1,000, delivery ₦1
 ## Next integration action
 
 Complete the Operations compatibility patch by reconciling submitted-version revision with the existing production revision RPCs, preserving all snapshot/version/alternative/acceptance rules and replacing only the broad authorization checks with the intended permission boundary. Then reconcile the exact production request-list RPC redaction and dependent frontend/Edge Function contracts. Keep all changes isolated until the complete production migration and rollback package passes review.
+
+
+## Follow-on schema and four-department authorization reconciliation
+
+A direct live catalog check confirms that the isolated test database does not contain the production revision RPCs `admin_create_direct_quotation_revision_v2(uuid)`, `admin_replace_direct_quotation_items_v2(uuid,jsonb)`, or `admin_submit_direct_quotation(uuid)`, and does not contain `admin_quotation_pricing_snapshots`. Production contains all four. The test database does contain the request snapshots, quotations, quotation items and alternative-proposal tables. This is a material schema/function mismatch; the full revision function must not be copied alone because its private pricing-snapshot table and dependent constraints are absent.
+
+The test database already contains the quotation integrity triggers for request snapshots, quotation version scope, immutable quotation items, cross-quotation acceptance, and append-only alternative proposals/decisions. These must be retained if the missing revision dependency package is later ported.
+
+### Role permission drift confirmed
+
+The live permission catalogs differ:
+
+- Test has the consolidated `advertisers_admin` permission group and expanded Finance bookkeeping/tax/settlement permissions.
+- Production currently has no `advertisers_admin` role permission group and still separates `supplier_admin` and `catalogue_admin`.
+- Test Operations has `quotations.manage_operational`; production does not yet.
+- Production Supplier currently has `supplier_quotes.manage`; test Supplier does not.
+- Test Finance has broader bookkeeping/tax/settlement permissions than production.
+- Test Advertisers has advertising review, advertiser/document management, communications and notifications permissions; production has not yet received this consolidated role group.
+
+This confirms that the four-department role consolidation is not yet production-ready. Do not apply the test permission list wholesale: first define the consolidated department-to-permission matrix and explicitly preserve Super Admin-only actions, including supplier-cost disclosure/selection, final supplier settlement approval, tax-rule administration and advertiser package pricing.
+
+### Next work sequence
+
+1. Complete a production-to-test dependency manifest for the revision function and private pricing snapshot table, including grants, triggers, RLS and foreign keys; do not copy partial objects.
+2. Complete the Supplier & Catalogue privilege boundary review, especially removing supplier cost, delivery cost and final supplier-selection capabilities from departmental supplier views.
+3. Reconcile Finance bookkeeping/tax/settlement permissions against the existing production functions and data tables.
+4. Reconcile Advertisers & Communications permissions and payment/notification Edge Function authorization.
+5. Only then prepare the ordered four-department role constraint and protected role-lookup migration, with exact production rollback and post-migration role matrix assertions.
