@@ -59,3 +59,35 @@ Do not simply copy the test mapping or production mapping. The consolidated Supp
 ## Release status
 
 **Not approved for production integration yet.** Supplier-cost exposure is a release blocker. No changes were made to either database. The findings are recorded for the master production integration register.
+
+
+## 26 November follow-up: live grants and frontend compatibility
+
+A direct production ACL inspection confirms the `products` table has `arwdDxt` (including TRUNCATE) granted to both `anon` and `authenticated`. The live privilege checks returned true for SELECT, INSERT, UPDATE, DELETE and TRUNCATE for both roles. The product table's RLS policies therefore do not provide a sufficient protection boundary for destructive table-level operations such as TRUNCATE.
+
+The production frontend audit found:
+- Public catalogue/home/product/quotation pages query explicit non-cost product columns.
+- Main Super Admin `admin.html` loads an explicit product projection without `supplier_cost`, and directly inserts/updates product rows.
+- `catalogue-admin.html` uses permission-gated RPCs for product create/details/price/stock operations.
+- `manage-supplier-costs.html` calls the Super Admin-only cost RPCs.
+- The legacy `admin-staging/admin-8.html` and `test-supabase.html` contain `select('*')` diagnostics and should not be used as production department entry points.
+
+This confirms the cost-column exposure is technically separable from ordinary catalogue reads, but changing table SELECT/INSERT/UPDATE grants needs coordinated handling of the remaining direct writes in `admin.html`. The broad grants must not simply be revoked without replacing those direct operations with protected Super Admin RPCs and verifying all clients.
+
+## Release-candidate files prepared
+
+- `supabase/release-candidates/20261126_supplier_quote_operational_security.sql`
+- `supabase/release-candidates/20261126_supplier_quote_operational_security_rollback.sql`
+
+These are drafts only and have not been applied. The forward candidate introduces a non-financial operational supplier-quote projection, reserves the legacy full-row quote list and final quote selection for Super Admin, and introduces a dedicated operational review permission. It preserves Super Admin-only product supplier cost maintenance and supplier assignment functions.
+
+The product table ACL correction remains a separate blocker and requires an explicit frontend/RPC compatibility migration before execution. The supplier quote candidate also requires validation of function grants, role constraint compatibility, and a departmental UI update to call the new operational projection.
+
+## Revised status
+
+- Supplier quote financial API separation: **candidate prepared; not applied or regression-tested**.
+- Super Admin-only final quote selection: **candidate prepared; not applied or regression-tested**.
+- Product supplier-cost Data API exposure: **confirmed release blocker**.
+- Broad product table grants incl. TRUNCATE: **confirmed release blocker**.
+- Catalogue frontend direct writes: **dependency identified; must be replaced or permission-scoped before grant tightening**.
+- No production or test database changes made during this follow-up.
