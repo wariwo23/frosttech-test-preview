@@ -35,3 +35,26 @@ The rollback restores the three legacy authorization predicates and removes the 
 ## Release decision
 
 **Not approved for production application yet.** The candidates are prepared; compatibility testing and the remaining authorization/frontend regression gates must pass first. No production database, frontend, Edge Function, payment, or live customer workflow was changed in this pass.
+
+
+## Frontend and function-contract audit — additional findings
+
+The current `operations-standard-quotations-test.html` is a draft-only editor, not yet a complete revision-capable Operations workspace:
+
+- It calls the three new draft/save/submit RPCs and the existing `ops_list_customer_requests()` and `ops_list_quotations()` readers.
+- It has no action to create a revision from an eligible submitted quotation, despite the production revision RPC already existing.
+- It reconstructs an edited quotation as a primary product plus additional rows. When it rebuilds item JSON it sets `source_proposal_id` and `replaces_item_id` to null. That can discard the link to a customer-accepted alternative or a replaced item when a draft is edited and saved. This must be fixed before the editor is considered production-compatible.
+- The editor assumes the first item in the returned item list is the primary item. The API must guarantee stable ordering and the editor must preserve all item metadata, not just display fields.
+- Catalogue lookup assumes `products(id,name,unit,selling_price,is_active)`; the production schema and its RLS/grants must be checked before using this direct client query in production.
+- It checks `profiles.is_active` and then `admin_get_my_role()`; the RPC remains the authoritative role check, but the page must also verify that only Operations and Super Admin are admitted and that Super Admin preview remains read-only.
+
+Production grant inspection confirmed that the three existing quotation revision/edit/submit RPCs currently allow EXECUTE to authenticated and deny anon/public. The authorization migration uses CREATE OR REPLACE and therefore intends to preserve those existing grants; this still requires a post-migration grant assertion in regression tests.
+
+## Updated next actions
+
+1. Extend the Operations editor with a revision action for only the existing function's eligible states; call `admin_create_direct_quotation_revision_v2`, then load the returned new draft ID.
+2. Preserve `source_proposal_id` and `replaces_item_id` for every row during edit/save. Do not clear accepted-alternative linkage.
+3. Ensure the draft reader returns a stable ordered item list and complete allowed operational metadata without exposing private supplier pricing.
+4. Verify production catalogue read policy/columns and use a safe, permission-scoped catalogue reader if direct client access is not appropriate.
+5. Add explicit role gating and post-migration function-grant assertions.
+6. Validate the release candidate in a disposable production-schema clone before any production execution.
