@@ -77,3 +77,34 @@ This stage did not replace legacy RLS policies in production, alter production p
 - Test project currently has zero advertiser, document, campaign, order and payment rows; no real payment or approval test has been fabricated.
 - Five test Edge Functions are active with JWT verification enabled.
 - The preflight function is configured to expect the test preview callback path, not the production site.
+
+## Payment and email notification readiness — 26 November 2026
+
+### Payment
+- The advertiser checkout page calls the test-only order, Paystack initialisation and Paystack verification functions.
+- Initialisation requires `PAYSTACK_TEST_SECRET_KEY` and `ADVERTISING_PAYSTACK_CALLBACK_URL`; there is no production-key fallback.
+- The preflight validates that the callback is HTTPS and points specifically to `/frosttech-test-preview/advertising-campaigns-test.html`.
+- The verification function checks the exact reference, successful Paystack status, NGN currency, amount equality, advertiser ownership and Development/Test environment before marking an order paid.
+- Payment verification does not publish a campaign.
+
+### Notifications
+- Added `advertising_notifications_test`, a private queue table with deduplication, status, provider ID, error tracking and a five-attempt ceiling.
+- Database triggers enqueue email notifications after advertiser approval/rejection, successful verified advertising payment, and campaign approval/rejection.
+- Added `dispatch-advertising-notification-test` (JWT required), restricted to the isolated test project and authorised Advertisers & Communications/Super Administrator permissions.
+- Added `admin_list_advertising_notifications_test_v1()` and an Email Notifications tab in the departmental review workspace. Dispatch and retries are explicit administrator actions; a queued notification is not represented as delivered.
+- The queue table has RLS enabled, no client table grants and no direct client policies. The administrator reads it through the permission-checking RPC.
+- Revoked anonymous and authenticated EXECUTE from the CAC approval trigger function; its only purpose is to run as a trigger.
+
+### Configuration boundary
+- The code checks for the dedicated Paystack and Brevo configuration at runtime without returning secret values.
+- The connected project tools do not expose Edge Function secret values or a secret-management action in this workflow. Therefore the presence and correctness of `PAYSTACK_TEST_SECRET_KEY`, `ADVERTISING_PAYSTACK_CALLBACK_URL`, `BREVO_API_KEY` and `EMAIL_FROM` have not been independently confirmed here.
+- The workflow is implementation-ready but must report `not ready` until those runtime checks pass. No real charge or customer email is claimed.
+
+## Next legacy-policy work — dependency order
+
+Migration 00 and Migration 01 are already present in the isolated test database and were re-verified on 26 November:
+- role constraints include `advertisers_admin` and `advertisers_communications`;
+- protected `admin_get_my_role()` and `admin_appoint_departmental_admin(uuid,text)` are SECURITY DEFINER with an empty search path, authenticated-only execution, and no anonymous execution;
+- the Advertisers & Communications permission rows exist.
+
+The next legacy-policy stage is the Operations & Customer quotation/order boundary. The current test inventory includes the legacy `admin_quotation_items_admin_manage` policy using `is_admin()`, a Super-Admin-only `Admins manage direct quotations` policy, customer-owned read policies, and permission-guarded operational quotation RPCs. The child and parent quotation policies must be assessed together; do not grant Operations direct item writes in isolation. Preserve customer-owned reads, immutable issued quotation snapshots, and Finance's separate financial-read boundary. The policy replacement migration will be prepared only after the current quotation-page and Edge Function callers are reconciled.
