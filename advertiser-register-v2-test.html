@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#081b35">
+<title>Create Advertiser Account | FrostTech</title>
+<meta name="ft-page-version" content="advertiser-register-v2-20261127">
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:18px;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#eef5fc,#f8fbff);color:#183153}
+.card{max-width:500px;margin:28px auto;background:#fff;padding:28px;border:1px solid #e1eaf3;border-radius:16px;box-shadow:0 12px 36px #102b4e12}
+.brand{text-align:center;margin-bottom:24px}
+.brand-mark{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 10px;border-radius:14px;background:linear-gradient(135deg,#1677e8,#20c4df);color:white;font-size:24px;font-weight:900}
+.brand h1{margin:0;color:#081b35;font-size:27px}
+.brand p{margin:5px 0 0;color:#64748b;font-size:13px}
+h2{margin:0 0 9px;color:#081b35;font-size:23px}
+.intro{margin:0 0 20px;color:#64748b;font-size:14px;line-height:1.65}
+label{display:block;margin:16px 0 7px;font-size:13px;font-weight:700;color:#183153}
+input{display:block;width:100%;min-height:49px;padding:12px 13px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px}
+input:focus{outline:3px solid #1677e81c;border-color:#1677e8}
+button{width:100%;min-height:50px;margin-top:22px;padding:13px;border:0;border-radius:9px;background:linear-gradient(110deg,#0757bc,#1677e8);color:white;font-size:15px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.6;cursor:not-allowed}
+.note{font-size:12px;line-height:1.6;color:#64748b}
+#message{display:none;margin-top:17px;padding:13px;border-radius:9px;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+#message.success{display:block;background:#effcf4;color:#166534;border:1px solid #bbebcf}
+#message.error{display:block;background:#fff1f2;color:#991b1b;border:1px solid #fecaca}
+#message.info{display:block;background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+.links{text-align:center;margin-top:19px;font-size:13px;line-height:2}
+a{color:#0757bc;font-weight:700}
+</style>
+</head>
+<body>
+<main class="card">
+<header class="brand">
+<div class="brand-mark">F</div>
+<h1>FrostTech</h1>
+<p>HVAC and Refrigeration Marketplace</p>
+</header>
+<h2>Create an Advertiser Account</h2>
+<p class="intro">Create your secure sign-in first. After registration and any required email confirmation, you can sign in and complete your company details and CAC verification in the Advertiser Workspace.</p>
+<form id="registrationForm">
+<label for="email">Email address *</label>
+<input id="email" type="email" maxlength="254" autocomplete="email" required placeholder="Enter your email address">
+<label for="password">Password *</label>
+<input id="password" type="password" autocomplete="new-password" required placeholder="At least 12 characters">
+<p class="note">Use at least 12 characters and no more than 72 UTF-8 bytes. Spaces and passphrases are allowed.</p>
+<p id="passwordFeedback" class="note" role="status" aria-live="polite" hidden></p>
+<label for="confirmPassword">Confirm password *</label>
+<input id="confirmPassword" type="password" autocomplete="new-password" required placeholder="Enter the same password again">
+<button id="registerButton" type="submit">Create Advertiser Account</button>
+</form>
+<div id="message" role="status" aria-live="polite"></div>
+<p class="note">Creating an account does not approve your business or activate an advertising campaign. Company details and a valid CAC certificate are submitted separately for FrostTech review.</p>
+<div class="links"><p>Already registered? <a href="advertiser-login-test.html">Advertiser Sign In</a></p><p><a href="index.html">Return to FrostTech homepage</a></p></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-test.js"></script>
+<script>
+"use strict";
+(function(){
+const form=document.getElementById("registrationForm");
+const message=document.getElementById("message");
+const button=document.getElementById("registerButton");
+const emailInput=document.getElementById("email");
+const passwordInput=document.getElementById("password");
+const confirmInput=document.getElementById("confirmPassword");
+const feedback=document.getElementById("passwordFeedback");
+function validatePassword(showFeedback){
+const value=passwordInput.value;
+const bytes=new TextEncoder().encode(value).length;
+let error="";
+if(showFeedback && value.length>0 && !value.trim()) error="Your password cannot contain only spaces.";
+else if(showFeedback && value.length>0 && Array.from(value).length<12) error="Use at least 12 characters. A memorable passphrase is a good choice.";
+else if(showFeedback && bytes>72) error="Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
+else if(showFeedback && confirmInput.value && value!==confirmInput.value) error="The passwords do not match.";
+passwordInput.setCustomValidity(error && value.length>0 ? error : "");
+confirmInput.setCustomValidity(showFeedback && confirmInput.value && value!==confirmInput.value ? "The passwords do not match." : "");
+feedback.textContent=error;
+feedback.hidden=!error;
+feedback.style.color=error?"#a11919":"#64748b";
+return !error;
+}
+passwordInput.addEventListener("input",()=>validatePassword(true));
+confirmInput.addEventListener("input",()=>validatePassword(true));
+function show(text,type){message.textContent=text;message.className=type;}
+form.addEventListener("submit",async function(event){
+event.preventDefault();
+const email=emailInput.value.trim().toLowerCase();
+const password=passwordInput.value;
+if(!email){show("Please enter a valid email address.","error");emailInput.focus();return;}
+if(!validatePassword(true)){if(!passwordInput.validity.valid)passwordInput.reportValidity();else confirmInput.reportValidity();return;}
+if(!form.reportValidity())return;
+const client=window.supabaseClient;
+if(!client||!client.auth){show("FrostTech could not connect to the account service. Refresh and try again.","error");return;}
+button.disabled=true;button.textContent="Creating Account...";
+try{
+const confirmationUrl=new URL("advertiser-login-test.html",window.location.href).href;
+const {data,error}=await client.auth.signUp({
+email:email,
+password:password,
+options:{emailRedirectTo:confirmationUrl,data:{account_type:"advertiser"}}
+});
+if(error)throw error;
+if(data&&data.session){
+show("Your advertiser sign-up succeeded. Opening your workspace...","success");
+window.location.replace(new URL("advertiser-portal-test.html",window.location.href).href);
+return;
+}
+show("Your advertiser account registration has been received. Please check your email and follow the confirmation link, then return here to sign in. Your company verification is the next separate step.","success");
+form.reset();
+}catch(error){
+show("Advertiser account registration failed: "+(error.message||"Please try again."),"error");
+}finally{
+button.disabled=false;button.textContent="Create Advertiser Account";
+}
+});
+})();
+</script>
+</body>
+</html>
