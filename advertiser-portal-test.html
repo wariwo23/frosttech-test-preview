@@ -471,7 +471,7 @@ a{
             </div>
         </div>
 
-        <button id="signOutButton" type="button">Sign Out</button>
+        <button id="signOutButton" class="hidden" type="button" aria-hidden="true">Sign Out</button>
     </div>
 </div>
 
@@ -1052,6 +1052,14 @@ window.location.href="advertiser-login-test.html";
 });
 
 async function start(){
+const signOutButton=document.getElementById("signOutButton");
+hide("applicationPanel");
+hide("documentsPanel");
+hide("statusPanel");
+hide("signedOutPanel");
+signOutButton.classList.add("hidden");
+signOutButton.setAttribute("aria-hidden","true");
+
 if(!db||!db.auth){
 showMessage(
 "FrostTech could not connect to Supabase. Please refresh the page.",
@@ -1061,32 +1069,49 @@ return;
 }
 
 try{
-const {data,error}=await db.auth.getUser();
+// Check for a session before asking Supabase to validate the user.
+// A visitor without a session is a normal signed-out state, not an error.
+const {data:sessionData,error:sessionError}=await db.auth.getSession();
+if(sessionError)throw sessionError;
 
-if(error)throw error;
-
-currentUser=data.user;
-
-if(!currentUser){
+const session=sessionData&&sessionData.session;
+if(!session){
+currentUser=null;
+advertiser=null;
 show("signedOutPanel");
-hide("applicationPanel");
-hide("documentsPanel");
-hide("statusPanel");
-
-document.getElementById("welcome").textContent=
-"You are not signed in.";
-
+document.getElementById("welcome").textContent="You are not signed in.";
 return;
 }
 
+const {data,error}=await db.auth.getUser();
+if(error)throw error;
+
+currentUser=data.user;
+if(!currentUser){
+await db.auth.signOut();
+show("signedOutPanel");
+document.getElementById("welcome").textContent="You are not signed in.";
+return;
+}
+
+signOutButton.classList.remove("hidden");
+signOutButton.removeAttribute("aria-hidden");
 document.getElementById("welcome").textContent=
-"Signed in as "+currentUser.email;
+"Signed in as "+(currentUser.email||"your advertiser account");
 
 await loadApplication();
 
 }catch(error){
+currentUser=null;
+advertiser=null;
+hide("applicationPanel");
+hide("documentsPanel");
+hide("statusPanel");
+show("signedOutPanel");
+document.getElementById("welcome").textContent="We could not verify your sign-in session.";
 showMessage(
-error.message||"Unable to load your advertiser workspace.",
+"Your advertiser session could not be verified. Please sign in again. Details: "+
+(error.message||"Authentication check failed."),
 "error"
 );
 }
