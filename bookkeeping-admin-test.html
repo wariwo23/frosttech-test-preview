@@ -154,6 +154,9 @@ async function init(){
   activeUser=session.user;$("identity").textContent=(session.user.email||"Administrator")+" · "+role.replaceAll("_"," ");
   activeRole=role;canPrepare=role==="super_admin";
   if(!canPrepare){const p=await db.rpc("admin_has_permission",{required_permission:"bookkeeping.prepare"});if(p.error)throw p.error;canPrepare=p.data===true;}
+  canReadReports=role==="super_admin";if(!canReadReports){const p=await db.rpc("admin_has_permission",{required_permission:"bookkeeping.reports.read"});if(p.error)throw p.error;canReadReports=p.data===true;}
+  canManageDocuments=role==="super_admin";if(!canManageDocuments){const p=await db.rpc("admin_has_permission",{required_permission:"bookkeeping.documents.manage"});if(p.error)throw p.error;canManageDocuments=p.data===true;}
+  $("financialReports").classList.toggle("hidden",!canReadReports);
   $("prepareAccess").textContent=canPrepare?"Journal preparation is available.":"This account has read-only bookkeeping access.";
   $("journalForm").classList.toggle("hidden",!canPrepare);
   $("approvalAccess").textContent=role==="super_admin"?"Super Administrator approval and posting controls are enabled.":"Approval and posting are restricted to the Super Administrator.";
@@ -161,7 +164,7 @@ async function init(){
   $("workspace").classList.remove("hidden");
   $("entryDate").value=new Date().toISOString().slice(0,10);
   await load();
-  populateReportPeriods();calculateReports();
+  if(canReadReports){populateReportPeriods();calculateReports();}
   $("entryPeriod").replaceChildren();
   periodsCache.forEach(p=>{const op=el("option","",p.period_name+" ("+p.status+")");op.value=p.id;$("entryPeriod").append(op);});
   $("entryPeriod").value=(periodsCache.find(p=>p.status==="open")||{}).id||"";
