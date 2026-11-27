@@ -48,7 +48,8 @@ async function load(){
    db.from("ft_bookkeeping_journals").select("id,entry_number,entry_date,description,source_reference,status,created_at").order("entry_date",{ascending:false}),
    db.from("ft_bookkeeping_journal_lines").select("journal_id,account_id,line_description,debit,credit"),
    db.from("ft_bookkeeping_expenses").select("expense_date,payee,description,amount,status,payment_method").order("expense_date",{ascending:false}),
-   db.from("ft_bookkeeping_shareholder_loans").select("lender_name,principal_amount,interest_rate,amount_repaid,repayment_terms,status,agreement_date").order("created_at",{ascending:false})
+   db.from("ft_bookkeeping_shareholder_loans").select("lender_name,principal_amount,interest_rate,amount_repaid,repayment_terms,status,agreement_date").order("created_at",{ascending:false}),
+   db.from("ft_bookkeeping_audit_log").select("id,table_name,record_id,action,actor_id,details,created_at").order("created_at",{ascending:false}).limit(100)
   ]);
   for(const result of [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult,auditResult])if(result.error)throw result.error;
   const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[],audit=auditResult.data||[];
