@@ -596,6 +596,7 @@ from public, anon, authenticated;
 
 grant select on table
   public.ft_bookkeeping_accounts,
+  public.ft_bookkeeping_audit_log,
   public.ft_bookkeeping_periods,
   public.ft_bookkeeping_journals,
   public.ft_bookkeeping_journal_lines,
@@ -615,5 +616,7 @@ to authenticated;
 -- Trigger functions are internal implementation details, not browser-callable RPCs.
 revoke all on function public.ft_bookkeeping_guard_journal() from public, anon, authenticated;
 revoke all on function public.ft_bookkeeping_guard_journal_line() from public, anon, authenticated;
+revoke all on function public.ft_bookkeeping_capture_audit() from public, anon, authenticated;
+revoke all on function public.ft_bookkeeping_reject_audit_mutation() from public, anon, authenticated;
 
 commit;
