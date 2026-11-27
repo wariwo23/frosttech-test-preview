@@ -262,6 +262,12 @@ button{
 
 button:active{transform:scale(.99)}
 
+.workspace-action-primary,.workspace-action-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:9px;text-decoration:none;font-size:14px;font-weight:800;text-align:center}
+.workspace-action-primary{background:linear-gradient(110deg,var(--blue),var(--blue-dark));color:white}
+.workspace-action-secondary{background:#e9eff7;color:#24415f;border:1px solid #d5e0ed}
+.workspace-action-primary:hover,.workspace-action-secondary:hover{text-decoration:underline}
+@media(max-width:520px){.workspace-action-primary,.workspace-action-secondary{width:100%}}
+
 button:disabled{
     opacity:.55;
     cursor:not-allowed;
@@ -656,7 +662,11 @@ a{
                 </p>
             </div>
         </div>
-        <a href="advertiser-login-test.html">Go to Advertiser Sign In</a><p style="margin-top:14px">New to FrostTech advertising? <a href="advertiser-register-test.html">Create an advertiser account</a>.</p>
+        <div class="actions" style="margin-top:18px">
+            <a class="workspace-action-primary" href="advertiser-login-test.html">Advertiser Sign In</a>
+            <a class="workspace-action-secondary" href="advertiser-register-test.html">Create Advertiser Account</a>
+        </div>
+        <p class="muted" style="margin:13px 0 0">New advertisers should create an account first. After registration and any required email confirmation, sign in to complete company details and CAC verification.</p>
     </section>
 
     <section class="panel" id="advertisingCampaignAccess">
