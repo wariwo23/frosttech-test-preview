@@ -31,9 +31,9 @@ button:disabled{background:#94a3b8}#message{display:none;margin-top:18px;padding
 <label for="address">Business Address *</label><input id="address" autocomplete="street-address" required>
 <label for="city">City *</label><input id="city" autocomplete="address-level2" required>
 <label for="state">State *</label><input id="state" autocomplete="address-level1" required>
-<label for="password">Password *</label><input id="password" type="password" minlength="8" autocomplete="new-password" required>
-<div class="small">Use at least 8 characters.</div>
-<label for="confirm_password">Confirm Password *</label><input id="confirm_password" type="password" minlength="8" autocomplete="new-password" required>
+<label for="password">Password *</label><input id="password" type="password" minlength="12" autocomplete="new-password" required>
+<div class="small">Use at least 12 characters (maximum 72 UTF-8 bytes). Spaces and passphrases are allowed.</div>
+<label for="confirm_password">Confirm Password *</label><input id="confirm_password" type="password" minlength="12" autocomplete="new-password" required>
 <button id="registerButton" type="submit">Register Test Supplier</button>
 </form>
 <div id="message" role="status" aria-live="polite"></div>
@@ -155,7 +155,7 @@ handleVerificationCallback();
 form.addEventListener("submit",async e=>{
  e.preventDefault();box.className="";box.textContent="";
  const password=document.getElementById("password").value,confirm=document.getElementById("confirm_password").value;
- if(password.length<8){showMessage("Your password must contain at least 8 characters.","error");return;}
+ if(Array.from(password).length<12){showMessage("Your password must contain at least 12 characters.","error");return;} if(new TextEncoder().encode(password).length>72){showMessage("Your password must not exceed 72 UTF-8 bytes.","error");return;} if(!password.trim()){showMessage("Your password cannot contain only spaces.","error");return;}
  if(password!==confirm){showMessage("The passwords do not match.","error");return;}
  if(!window.supabaseClient){showMessage("The test database client did not load. Please refresh and try again.","error");return;}
  const body={business_name:document.getElementById("business_name").value.trim(),contact_name:document.getElementById("contact_name").value.trim(),email:document.getElementById("email").value.trim().toLowerCase(),phone:document.getElementById("phone").value.trim(),address:document.getElementById("address").value.trim(),city:document.getElementById("city").value.trim(),state:document.getElementById("state").value.trim(),password};
@@ -169,5 +169,6 @@ form.addEventListener("submit",async e=>{
  finally{button.disabled=false;button.textContent="Register Test Supplier";}
 });
 </script>
+<script src="password-policy.js"></script>
 </body>
 </html>
