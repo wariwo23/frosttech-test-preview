@@ -17,24 +17,27 @@
       status.setAttribute("role", "status");
       status.setAttribute("aria-live", "polite");
       status.style.cssText = "margin:7px 0 12px;color:#526579;font-size:12px;line-height:1.5";
-      const anchor = passwordInput.closest(".field, .form-group") || passwordInput.parentElement;
-      anchor.insertAdjacentElement("afterend", status);
+      const adjacentNote = passwordInput.nextElementSibling && passwordInput.nextElementSibling.tagName === "P" ? passwordInput.nextElementSibling : null;
+      const anchor = passwordInput.closest(".field, .form-group");
+      if (adjacentNote) adjacentNote.insertAdjacentElement("afterend", status);
+      else if (anchor) anchor.insertAdjacentElement("afterend", status);
+      else passwordInput.insertAdjacentElement("afterend", status);
     }
     return status;
   }
 
-  function validate(passwordInput, confirmInput, status) {
+  function validate(passwordInput, confirmInput, status, showErrors) {
     const password = passwordInput.value;
     const length = countCharacters(password);
     const bytes = countUtf8Bytes(password);
     let message = "";
-    if (password.length > 0 && !password.trim()) message = "Your password cannot contain only spaces.";
-    else if (password.length > 0 && length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
-    else if (bytes > MAX_BYTES) message = "Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
-    else if (confirmInput && confirmInput.value && password !== confirmInput.value) message = "The passwords do not match.";
+    if (showErrors && password.length > 0 && !password.trim()) message = "Your password cannot contain only spaces.";
+    else if (showErrors && password.length > 0 && length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
+    else if (showErrors && bytes > MAX_BYTES) message = "Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
+    else if (showErrors && confirmInput && confirmInput.value && password !== confirmInput.value) message = "The passwords do not match.";
 
     passwordInput.setCustomValidity(message && password.length > 0 ? message : "");
-    if (confirmInput) confirmInput.setCustomValidity(confirmInput.value && password !== confirmInput.value ? "The passwords do not match." : "");
+    if (confirmInput) confirmInput.setCustomValidity(showErrors && confirmInput.value && password !== confirmInput.value ? "The passwords do not match." : "");
     if (status) {
       status.textContent = message || (password.length === 0 ? "Password guidance: 12 or more characters, up to 72 UTF-8 bytes. Spaces and passphrases are allowed." : "Password length looks good. Avoid reusing a password from another service.");
       status.style.color = message ? "#a11919" : "#526579";
@@ -54,18 +57,18 @@
     if (!describedBy.includes(statusId)) describedBy.push(statusId);
     passwordInput.setAttribute("aria-describedby", describedBy.join(" "));
     const status = getStatusNode(form, passwordInput);
-    const update = () => validate(passwordInput, confirmInput, status);
-    passwordInput.addEventListener("input", update);
-    if (confirmInput) confirmInput.addEventListener("input", update);
+    const update = (showErrors) => validate(passwordInput, confirmInput, status, showErrors);
+    passwordInput.addEventListener("input", () => update(true));
+    if (confirmInput) confirmInput.addEventListener("input", () => update(true));
     form.addEventListener("submit", function (event) {
-      if (!update()) {
+      if (!update(true)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         if (!passwordInput.validity.valid) passwordInput.reportValidity();
         if (confirmInput && !confirmInput.validity.valid) confirmInput.reportValidity();
       }
     }, true);
-    update();
+    update(false);
   }
 
   function initializePasswordPolicy() {
