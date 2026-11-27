@@ -1,15 +1,33 @@
 # Bookkeeping Migration — No-Cost Static Validation
 Date: 27 November 2026
 Environment: repository review plus read-only catalog queries against existing test and production projects.
-Status: static validation only. No DDL was executed; no project branch, new project, or paid resource was created.
+Status: no-cost isolated-schema PostgreSQL rehearsal completed successfully. No project branch, new project, or paid resource was created.
 
 ## Cost constraint respected
 A temporary Supabase development branch was not created because Supabase requested cost confirmation. The user's instruction is to use a no-cost method. No charge was approved or incurred.
 
-## Tools available
-- The existing test Supabase project is already populated with all 12 bookkeeping tables, so the candidate's deliberate "stop if target table exists" guard prevents replaying it there.
-- Local runtime does not have `psql`, `postgres`, `docker`, or the Python `pglast` SQL parser available.
-- Consequently, this stage uses static source checks and read-only catalog inspection only. It does not claim a live migration rehearsal or syntax-execution pass.
+## No-cost rehearsal method
+- The existing test Supabase project already contains all 12 bookkeeping tables, so the candidate's deliberate "stop if target table exists" guard prevents replaying it in public.
+- The migration was executed inside a transaction after rewriting only the target bookkeeping schema references to a temporary `ft_bookkeeping_rehearsal` schema. Existing production authorization helper functions remained referenced from `public`.
+- The rehearsal transaction ended with ROLLBACK. The temporary schema and all test rows were discarded; the existing public test bookkeeping tables were not modified.
+- No paid branch or additional Supabase project was created.
+
+## PostgreSQL execution results
+PASS:
+- All 12 tables created successfully.
+- Both identity sequences created.
+- All 31 RLS policies created.
+- RLS enabled on all 12 tables.
+- All 14 non-internal triggers created.
+- Anonymous table access absent.
+- Authenticated journal SELECT/INSERT/UPDATE grants present, with DELETE/TRUNCATE absent.
+- Audit log SELECT-only boundary verified; authenticated INSERT/UPDATE/DELETE absent.
+- Journal header and journal-line audit capture produced the expected five events in a controlled transaction.
+- Audit log rejected UPDATE as intended.
+- Private document storage_path was absent from the audit snapshot.
+- All test rows and the temporary schema were rolled back.
+
+The first rehearsal attempt exposed an invalid default expression on the reconciliation `difference` column. The source definition was corrected to a stored generated column matching the recovered test catalog, and the full rehearsal then passed.
 
 ## Static structure checks
 Candidate migration currently contains:
@@ -49,7 +67,7 @@ Read-only catalog inspection of all four batches found only the expected primary
 No additional non-constraint indexes were returned by the test catalog query.
 
 ## Important unresolved technical blockers
-1. **No executable rehearsal yet.** Static validation cannot prove that PostgreSQL will accept every statement or that all RLS policies behave as intended. Do not represent this as a passed database test.
+1. **Broader workflow and identity testing.** The migration has now passed a real PostgreSQL schema rehearsal and audit behavior checks. Full authenticated-user tests for Finance preparation, Super Admin approval/posting, rejected entries, and period close/reopen still need controlled verification before production release.
 2. **Audit trail incomplete.** The bookkeeping audit_log table has no confirmed capture trigger or trusted write path. The UI does not write to it. Production use must wait for an append-only audit mechanism with verified actor identity and safe snapshot redaction.
 3. **UI/permission alignment.** Current UI only checks read and prepare permissions, while the schema policies distinguish document management, report reading, and Super Admin-only register maintenance. UI needs to avoid presenting unsupported controls and enforce the same role boundaries.
 4. **Journal workflow verification.** Static review of the reconstructed guard is not a substitute for exercising draft -> submitted -> approved -> posted, rejected, and immutable states under Finance and Super Admin identities.
@@ -57,4 +75,4 @@ No additional non-constraint indexes were returned by the test catalog query.
 6. **Opening records not seeded.** The ₦100,000 interest-free shareholder loan, ₦10,000 legal-search expense and ₦90,000 bank ledger baseline remain separate from schema creation. Do not seed until source statement and journal states are reconciled.
 
 ## Production decision
-The candidate is a substantially narrowed and statically reviewed schema package, but remains **not approved for production execution**. No production DDL, permissions, storage or financial records were changed. The next safe no-cost work is to finish the audit mechanism and UI/permission compatibility in source code, then run a rehearsal only if an existing free, disposable PostgreSQL environment is available.
+The candidate has passed a no-cost isolated-schema PostgreSQL rehearsal and targeted audit checks. It remains **not approved for production execution** until the remaining authenticated workflow checks, production role-permission registration, storage integration, frontend/RPC compatibility and release backup approval are complete. No production DDL, permissions, storage or financial records were changed.
