@@ -28,12 +28,12 @@
     const length = countCharacters(password);
     const bytes = countUtf8Bytes(password);
     let message = "";
-    if (length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
-    else if (bytes > MAX_BYTES) message = "Your password must not exceed Supabase’s 72-byte password limit. Use fewer characters or simpler characters.";
-    else if (!password.trim()) message = "Your password cannot contain only spaces.";
+    if (!password.trim()) message = "Your password cannot contain only spaces.";
+    else if (length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
+    else if (bytes > MAX_BYTES) message = "Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
     else if (confirmInput && confirmInput.value && password !== confirmInput.value) message = "The passwords do not match.";
 
-    passwordInput.setCustomValidity(bytes > MAX_BYTES || (length > 0 && length < MIN_LENGTH) || !password.trim() ? message : "");
+    passwordInput.setCustomValidity(message && (bytes > MAX_BYTES || length < MIN_LENGTH || !password.trim()) ? message : "");
     if (confirmInput) confirmInput.setCustomValidity(confirmInput.value && password !== confirmInput.value ? "The passwords do not match." : "");
     if (status) {
       status.textContent = message || (length >= MIN_LENGTH ? "Password length looks good. Avoid reusing a password from another service." : "Password guidance: 12 or more characters, up to 72 UTF-8 bytes. Spaces and passphrases are allowed.");
@@ -47,8 +47,8 @@
     if (!passwordInput) return;
     const confirmInput = form.querySelector('input[id*="confirm" i], input[name*="confirm" i]');
     passwordInput.minLength = MIN_LENGTH;
-    passwordInput.maxLength = 72;
-    if (confirmInput) { confirmInput.minLength = MIN_LENGTH; confirmInput.maxLength = 72; }
+    // Do not set maxLength: it silently truncates input before the 72-byte validator can explain the error.
+    if (confirmInput) confirmInput.minLength = MIN_LENGTH;
     const statusId = "ft-password-status-" + (form.id || "form");
     const describedBy = (passwordInput.getAttribute("aria-describedby") || "").trim().split(/\s+/).filter(Boolean);
     if (!describedBy.includes(statusId)) describedBy.push(statusId);
@@ -65,6 +65,7 @@
         if (confirmInput && !confirmInput.validity.valid) confirmInput.reportValidity();
       }
     }, true);
+    update();
   }
 
   function initializePasswordPolicy() {
