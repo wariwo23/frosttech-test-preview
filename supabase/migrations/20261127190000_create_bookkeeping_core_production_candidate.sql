@@ -346,6 +346,74 @@ create trigger ft_bookkeeping_journal_line_guard
 before insert or update or delete on public.ft_bookkeeping_journal_lines
 for each row execute function public.ft_bookkeeping_guard_journal_line();
 
+-- 3a. Append-only audit trail for journal headers and lines.
+-- SECURITY DEFINER is restricted to trigger invocation; no browser RPC grant.
+create or replace function public.ft_bookkeeping_capture_audit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_old jsonb;
+  v_new jsonb;
+  v_record_id uuid;
+  v_action text;
+begin
+  if tg_op = 'INSERT' then
+    v_new := to_jsonb(new);
+    v_record_id := new.id;
+    v_action := 'INSERT';
+  elsif tg_op = 'UPDATE' then
+    v_old := to_jsonb(old);
+    v_new := to_jsonb(new);
+    v_record_id := new.id;
+    v_action := 'UPDATE';
+  elsif tg_op = 'DELETE' then
+    v_old := to_jsonb(old);
+    v_record_id := old.id;
+    v_action := 'DELETE';
+  else
+    raise exception 'Unsupported audit trigger operation: %', tg_op;
+  end if;
+
+  insert into public.ft_bookkeeping_audit_log
+    (table_name, record_id, action, actor_id, details, created_at)
+  values
+    (tg_table_name, v_record_id, v_action, auth.uid(),
+     jsonb_build_object('old', v_old, 'new', v_new), now());
+
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$function$;
+
+create or replace function public.ft_bookkeeping_reject_audit_mutation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  raise exception 'Bookkeeping audit records are append-only and cannot be changed or deleted.';
+end;
+$function$;
+
+create trigger ft_bookkeeping_journals_audit
+after insert or update or delete on public.ft_bookkeeping_journals
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_journal_lines_audit
+after insert or update or delete on public.ft_bookkeeping_journal_lines
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_audit_immutable
+before update or delete on public.ft_bookkeeping_audit_log
+for each row execute function public.ft_bookkeeping_reject_audit_mutation();
+
+revoke all on function public.ft_bookkeeping_capture_audit() from public, anon, authenticated;
+revoke all on function public.ft_bookkeeping_reject_audit_mutation() from public, anon, authenticated;
+
 -- 4. RLS policies. No anonymous access. No test-only role fallback.
 alter table public.ft_bookkeeping_accounts enable row level security;
 alter table public.ft_bookkeeping_audit_log enable row level security;
