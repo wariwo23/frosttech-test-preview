@@ -21,6 +21,25 @@ The migration is reconstructed from the live isolated-test table catalog and che
 6. Explicit grants for authenticated reads and only the current UI's insert/update workflows. No anonymous access and no authenticated DELETE, TRUNCATE, TRIGGER or REFERENCES grants.
 7. No test-only grant fallback, no changes to existing production auth helpers, no tax settings changes, no test financial record import.
 
+## Audit trail and interface compatibility update
+
+The migration candidate now includes an append-only audit mechanism for journal headers and journal lines:
+- AFTER INSERT/UPDATE/DELETE triggers capture old/new row snapshots, table name, record UUID, action, authenticated actor (when present), and timestamp.
+- Audit writes occur through a SECURITY DEFINER trigger function with an empty search_path; it is not exposed as a browser-callable RPC.
+- A separate trigger rejects UPDATE and DELETE against audit records.
+- Authenticated users receive SELECT only on the audit log, and RLS limits that view to Super Admin or users with `bookkeeping.read`.
+- No direct authenticated INSERT/UPDATE/DELETE privileges are granted on the audit log.
+
+Scope limitation: this first audit mechanism covers journal headers and journal lines only. It does not yet audit changes to expenses, bank transactions, documents, accounting periods, chart of accounts, shareholder loans, fixed assets or reconciliations. Do not describe it as a complete audit of every bookkeeping register.
+
+The test bookkeeping page now:
+- checks `bookkeeping.reports.read` separately and hides the reports section when absent;
+- checks `bookkeeping.documents.manage` separately and displays the permission status;
+- displays the latest 100 audit events to users already authorized for bookkeeping read access;
+- does not expose document-upload controls that have not yet been implemented.
+
+The rollback candidate now removes the audit triggers and functions as well as the journal workflow triggers/functions, and retains the non-empty-table refusal.
+
 ## Additional hardening applied
 
 The recovered test journal-line guard checked only the destination journal during UPDATE. That left a Super Admin edge case where a line could be moved out of an approved/posted journal into a draft journal. The candidate was hardened to check both the old and new parent journals, and to reject any mutation involving approved or posted journals. This is an intentional security improvement over the test definition.
