@@ -44,6 +44,7 @@ a{color:#0757bc;font-weight:700}
 <label for="password">Password *</label>
 <input id="password" type="password" autocomplete="new-password" required minlength="12" placeholder="At least 12 characters">
 <p class="note">Use at least 12 characters and no more than 72 UTF-8 bytes. Spaces and passphrases are allowed.</p>
+<p id="passwordFeedback" class="note" role="status" aria-live="polite" hidden></p>
 <label for="confirmPassword">Confirm password *</label>
 <input id="confirmPassword" type="password" autocomplete="new-password" required minlength="12" placeholder="Enter the same password again">
 <button id="registerButton" type="submit">Create Advertiser Account</button>
@@ -53,7 +54,6 @@ a{color:#0757bc;font-weight:700}
 <div class="links"><p>Already registered? <a href="advertiser-login-test.html">Advertiser Sign In</a></p><p><a href="index.html">Return to FrostTech homepage</a></p></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="password-policy.js?v=20261127-4"></script>
 <script src="supabase-test.js"></script>
 <script>
 "use strict";
@@ -64,14 +64,31 @@ const button=document.getElementById("registerButton");
 const emailInput=document.getElementById("email");
 const passwordInput=document.getElementById("password");
 const confirmInput=document.getElementById("confirmPassword");
+const feedback=document.getElementById("passwordFeedback");
+function validatePassword(showFeedback){
+const value=passwordInput.value;
+const bytes=new TextEncoder().encode(value).length;
+let error="";
+if(showFeedback && value.length>0 && !value.trim()) error="Your password cannot contain only spaces.";
+else if(showFeedback && value.length>0 && Array.from(value).length<12) error="Use at least 12 characters. A memorable passphrase is a good choice.";
+else if(showFeedback && bytes>72) error="Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
+else if(showFeedback && confirmInput.value && value!==confirmInput.value) error="The passwords do not match.";
+passwordInput.setCustomValidity(error && value.length>0 ? error : "");
+confirmInput.setCustomValidity(showFeedback && confirmInput.value && value!==confirmInput.value ? "The passwords do not match." : "");
+feedback.textContent=error;
+feedback.hidden=!error;
+feedback.style.color=error?"#a11919":"#64748b";
+return !error;
+}
+passwordInput.addEventListener("input",()=>validatePassword(true));
+confirmInput.addEventListener("input",()=>validatePassword(true));
 function show(text,type){message.textContent=text;message.className=type;}
 form.addEventListener("submit",async function(event){
 event.preventDefault();
 const email=emailInput.value.trim().toLowerCase();
 const password=passwordInput.value;
 if(!email){show("Please enter a valid email address.","error");emailInput.focus();return;}
-if(password!==confirmInput.value){confirmInput.setCustomValidity("The passwords do not match.");confirmInput.reportValidity();show("The passwords do not match.","error");return;}
-confirmInput.setCustomValidity("");
+if(!validatePassword(true)){if(!passwordInput.validity.valid)passwordInput.reportValidity();else confirmInput.reportValidity();return;}
 if(!form.reportValidity())return;
 const client=window.supabaseClient;
 if(!client||!client.auth){show("FrostTech could not connect to the account service. Refresh and try again.","error");return;}
