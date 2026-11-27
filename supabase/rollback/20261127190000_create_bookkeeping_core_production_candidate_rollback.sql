@@ -31,6 +31,15 @@ begin
   end if;
 end $$;
 
+drop trigger if exists ft_bookkeeping_accounts_audit on public.ft_bookkeeping_accounts;
+drop trigger if exists ft_bookkeeping_bank_accounts_audit on public.ft_bookkeeping_bank_accounts;
+drop trigger if exists ft_bookkeeping_bank_transactions_audit on public.ft_bookkeeping_bank_transactions;
+drop trigger if exists ft_bookkeeping_documents_audit on public.ft_bookkeeping_documents;
+drop trigger if exists ft_bookkeeping_expenses_audit on public.ft_bookkeeping_expenses;
+drop trigger if exists ft_bookkeeping_fixed_assets_audit on public.ft_bookkeeping_fixed_assets;
+drop trigger if exists ft_bookkeeping_periods_audit on public.ft_bookkeeping_periods;
+drop trigger if exists ft_bookkeeping_reconciliations_audit on public.ft_bookkeeping_reconciliations;
+drop trigger if exists ft_bookkeeping_shareholder_loans_audit on public.ft_bookkeeping_shareholder_loans;
 drop trigger if exists ft_bookkeeping_audit_immutable on public.ft_bookkeeping_audit_log;
 drop trigger if exists ft_bookkeeping_journal_lines_audit on public.ft_bookkeeping_journal_lines;
 drop trigger if exists ft_bookkeeping_journals_audit on public.ft_bookkeeping_journals;
