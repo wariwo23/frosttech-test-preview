@@ -16,7 +16,7 @@
 </header>
 <main>
 <section class="card banner"><strong>ISOLATED TEST ENVIRONMENT</strong><p>This workspace reads the separate FrostTech company bookkeeping ledger in the test database. It does not import marketplace customer payments, supplier settlements or production financial records. No production project is accessed.</p></section>
-<section class="card"><h2>Bookkeeping access</h2><p id="accessStatus" class="message">Verifying your administrator session…</p><p id="loginAction" class="hidden"><a class="button" href="test-admin-login.html?return=bookkeeping-admin-test.html">Sign In to Test Administration</a></p><div id="identity" class="muted"></div><div class="toolbar"><button id="refresh" type="button">Refresh Bookkeeping</button><button id="signOut" type="button" class="secondary">Sign Out</button></div></section>
+<section class="card"><h2>Bookkeeping access</h2><p id="accessStatus" class="message">Verifying your administrator session…</p><p id="loginAction" class="hidden"><a class="button" href="test-admin-login.html?return=bookkeeping-admin-test.html">Sign In to Test Administration</a></p><div id="identity" class="muted"></div><div id="documentPermission" class="muted"></div><div class="toolbar"><button id="refresh" type="button">Refresh Bookkeeping</button><button id="signOut" type="button" class="secondary">Sign Out</button></div></section>
 <div id="workspace" class="hidden">
 <section class="card"><h2>Accounting period</h2><div id="periodInfo" class="message">Loading accounting period…</div></section>
 <section class="card"><h2>Bookkeeping control summary</h2><p class="muted">Only posted journal entries form the official ledger balances. Draft entries remain pending and are displayed separately below.</p><div id="metrics" class="grid"></div></section>
@@ -157,6 +157,7 @@ async function init(){
   canReadReports=role==="super_admin";if(!canReadReports){const p=await db.rpc("admin_has_permission",{required_permission:"bookkeeping.reports.read"});if(p.error)throw p.error;canReadReports=p.data===true;}
   canManageDocuments=role==="super_admin";if(!canManageDocuments){const p=await db.rpc("admin_has_permission",{required_permission:"bookkeeping.documents.manage"});if(p.error)throw p.error;canManageDocuments=p.data===true;}
   $("financialReports").classList.toggle("hidden",!canReadReports);
+  $("documentPermission").textContent=canManageDocuments?"Document management permission: enabled. Document upload controls are not exposed on this bookkeeping page yet.":"Document management permission: not assigned to this account.";
   $("prepareAccess").textContent=canPrepare?"Journal preparation is available.":"This account has read-only bookkeeping access.";
   $("journalForm").classList.toggle("hidden",!canPrepare);
   $("approvalAccess").textContent=role==="super_admin"?"Super Administrator approval and posting controls are enabled.":"Approval and posting are restricted to the Super Administrator.";
