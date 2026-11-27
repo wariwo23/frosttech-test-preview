@@ -508,7 +508,9 @@ create policy ft_bookkeeping_loans_write on public.ft_bookkeeping_shareholder_lo
 for all to authenticated
 using (public.is_super_admin()) with check (public.is_super_admin());
 
--- 5. Explicit least-privilege Data API grants. Never grant DELETE/TRUNCATE/TRIGGER/REFERENCES.
+-- 5. Explicit least-privilege Data API grants.
+-- Match the inspected current frontend: six read tables, journal/line inserts,
+-- and journal status updates. Do not grant writes for unused future controls.
 revoke all on table
   public.ft_bookkeeping_accounts,
   public.ft_bookkeeping_audit_log,
@@ -526,45 +528,20 @@ from public, anon, authenticated;
 
 grant select on table
   public.ft_bookkeeping_accounts,
-  public.ft_bookkeeping_audit_log,
-  public.ft_bookkeeping_bank_accounts,
-  public.ft_bookkeeping_bank_transactions,
-  public.ft_bookkeeping_documents,
-  public.ft_bookkeeping_expenses,
-  public.ft_bookkeeping_fixed_assets,
-  public.ft_bookkeeping_journal_lines,
-  public.ft_bookkeeping_journals,
   public.ft_bookkeeping_periods,
-  public.ft_bookkeeping_reconciliations,
+  public.ft_bookkeeping_journals,
+  public.ft_bookkeeping_journal_lines,
+  public.ft_bookkeeping_expenses,
   public.ft_bookkeeping_shareholder_loans
 to authenticated;
 
 grant insert on table
   public.ft_bookkeeping_journals,
-  public.ft_bookkeeping_journal_lines,
-  public.ft_bookkeeping_bank_transactions,
-  public.ft_bookkeeping_documents,
-  public.ft_bookkeeping_expenses,
-  public.ft_bookkeeping_fixed_assets,
-  public.ft_bookkeeping_periods,
-  public.ft_bookkeeping_reconciliations,
-  public.ft_bookkeeping_accounts,
-  public.ft_bookkeeping_bank_accounts,
-  public.ft_bookkeeping_shareholder_loans
+  public.ft_bookkeeping_journal_lines
 to authenticated;
 
 grant update on table
-  public.ft_bookkeeping_journals,
-  public.ft_bookkeeping_journal_lines,
-  public.ft_bookkeeping_bank_transactions,
-  public.ft_bookkeeping_documents,
-  public.ft_bookkeeping_expenses,
-  public.ft_bookkeeping_fixed_assets,
-  public.ft_bookkeeping_periods,
-  public.ft_bookkeeping_reconciliations,
-  public.ft_bookkeeping_accounts,
-  public.ft_bookkeeping_bank_accounts,
-  public.ft_bookkeeping_shareholder_loans
+  public.ft_bookkeeping_journals
 to authenticated;
 
 -- Trigger functions are internal implementation details, not browser-callable RPCs.
