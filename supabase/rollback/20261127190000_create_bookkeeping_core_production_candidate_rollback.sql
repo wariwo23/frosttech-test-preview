@@ -31,9 +31,14 @@ begin
   end if;
 end $$;
 
+drop trigger if exists ft_bookkeeping_audit_immutable on public.ft_bookkeeping_audit_log;
+drop trigger if exists ft_bookkeeping_journal_lines_audit on public.ft_bookkeeping_journal_lines;
+drop trigger if exists ft_bookkeeping_journals_audit on public.ft_bookkeeping_journals;
 drop trigger if exists ft_bookkeeping_journal_line_guard on public.ft_bookkeeping_journal_lines;
 drop trigger if exists ft_bookkeeping_journal_guard on public.ft_bookkeeping_journals;
 drop function if exists public.ft_bookkeeping_guard_journal_line();
+drop function if exists public.ft_bookkeeping_reject_audit_mutation();
+drop function if exists public.ft_bookkeeping_capture_audit();
 drop function if exists public.ft_bookkeeping_guard_journal();
 
 drop table public.ft_bookkeeping_shareholder_loans;
