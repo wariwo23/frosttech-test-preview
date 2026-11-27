@@ -67,7 +67,13 @@
     }, true);
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initializePasswordPolicy() {
     FORM_IDS.forEach(function (id) { const form = document.getElementById(id); if (form) attach(form); });
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializePasswordPolicy, { once: true });
+  } else {
+    initializePasswordPolicy();
+  }
 })();
