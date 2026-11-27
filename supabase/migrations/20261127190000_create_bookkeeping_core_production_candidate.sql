@@ -362,15 +362,21 @@ declare
 begin
   if tg_op = 'INSERT' then
     v_new := to_jsonb(new);
+    if tg_table_name = 'ft_bookkeeping_documents' then v_new := v_new - 'storage_path'; end if;
     v_record_id := new.id;
     v_action := 'INSERT';
   elsif tg_op = 'UPDATE' then
     v_old := to_jsonb(old);
     v_new := to_jsonb(new);
+    if tg_table_name = 'ft_bookkeeping_documents' then
+      v_old := v_old - 'storage_path';
+      v_new := v_new - 'storage_path';
+    end if;
     v_record_id := new.id;
     v_action := 'UPDATE';
   elsif tg_op = 'DELETE' then
     v_old := to_jsonb(old);
+    if tg_table_name = 'ft_bookkeeping_documents' then v_old := v_old - 'storage_path'; end if;
     v_record_id := old.id;
     v_action := 'DELETE';
   else
@@ -402,6 +408,43 @@ $function$;
 create trigger ft_bookkeeping_journals_audit
 after insert or update or delete on public.ft_bookkeeping_journals
 for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_accounts_audit
+after insert or update or delete on public.ft_bookkeeping_accounts
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_bank_accounts_audit
+after insert or update or delete on public.ft_bookkeeping_bank_accounts
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_bank_transactions_audit
+after insert or update or delete on public.ft_bookkeeping_bank_transactions
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_documents_audit
+after insert or update or delete on public.ft_bookkeeping_documents
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_expenses_audit
+after insert or update or delete on public.ft_bookkeeping_expenses
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_fixed_assets_audit
+after insert or update or delete on public.ft_bookkeeping_fixed_assets
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_periods_audit
+after insert or update or delete on public.ft_bookkeeping_periods
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_reconciliations_audit
+after insert or update or delete on public.ft_bookkeeping_reconciliations
+for each row execute function public.ft_bookkeeping_capture_audit();
+
+create trigger ft_bookkeeping_shareholder_loans_audit
+after insert or update or delete on public.ft_bookkeeping_shareholder_loans
+for each row execute function public.ft_bookkeeping_capture_audit();
+
 
 create trigger ft_bookkeeping_journal_lines_audit
 after insert or update or delete on public.ft_bookkeeping_journal_lines
