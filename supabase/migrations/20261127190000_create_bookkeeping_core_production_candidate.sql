@@ -304,19 +304,33 @@ language plpgsql
 set search_path = ''
 as $function$
 declare
-  v_journal_id uuid;
-  v_status text;
+  v_old_status text;
+  v_new_status text;
 begin
-  v_journal_id := case when tg_op = 'DELETE' then old.journal_id else new.journal_id end;
-  select status into v_status
-  from public.ft_bookkeeping_journals
-  where id = v_journal_id;
+  if tg_op in ('UPDATE','DELETE') then
+    select status into v_old_status
+    from public.ft_bookkeeping_journals
+    where id = old.journal_id;
 
-  if v_status is distinct from 'draft' and not public.is_super_admin() then
-    raise exception 'Journal lines are locked after submission. Return a submitted journal through the controlled review process before correction.';
+    if v_old_status in ('approved','posted') then
+      raise exception 'Approved and posted journal lines are immutable.';
+    end if;
+    if v_old_status is distinct from 'draft' and not public.is_super_admin() then
+      raise exception 'Journal lines are locked after submission. Return a submitted journal through the controlled review process before correction.';
+    end if;
   end if;
-  if v_status in ('approved','posted') then
-    raise exception 'Approved and posted journal lines are immutable.';
+
+  if tg_op in ('INSERT','UPDATE') then
+    select status into v_new_status
+    from public.ft_bookkeeping_journals
+    where id = new.journal_id;
+
+    if v_new_status in ('approved','posted') then
+      raise exception 'Approved and posted journal lines are immutable.';
+    end if;
+    if v_new_status is distinct from 'draft' and not public.is_super_admin() then
+      raise exception 'Journal lines may only be added to draft journals.';
+    end if;
   end if;
 
   if tg_op = 'DELETE' then return old; end if;
