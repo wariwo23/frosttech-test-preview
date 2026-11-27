@@ -28,15 +28,15 @@
     const length = countCharacters(password);
     const bytes = countUtf8Bytes(password);
     let message = "";
-    if (!password.trim()) message = "Your password cannot contain only spaces.";
-    else if (length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
+    if (password.length > 0 && !password.trim()) message = "Your password cannot contain only spaces.";
+    else if (password.length > 0 && length < MIN_LENGTH) message = "Use at least 12 characters. A memorable passphrase is a good choice.";
     else if (bytes > MAX_BYTES) message = "Your password must not exceed 72 UTF-8 bytes. Use fewer characters or simpler characters.";
     else if (confirmInput && confirmInput.value && password !== confirmInput.value) message = "The passwords do not match.";
 
-    passwordInput.setCustomValidity(message && (bytes > MAX_BYTES || length < MIN_LENGTH || !password.trim()) ? message : "");
+    passwordInput.setCustomValidity(message && password.length > 0 ? message : "");
     if (confirmInput) confirmInput.setCustomValidity(confirmInput.value && password !== confirmInput.value ? "The passwords do not match." : "");
     if (status) {
-      status.textContent = message || (length >= MIN_LENGTH ? "Password length looks good. Avoid reusing a password from another service." : "Password guidance: 12 or more characters, up to 72 UTF-8 bytes. Spaces and passphrases are allowed.");
+      status.textContent = message || (password.length === 0 ? "Password guidance: 12 or more characters, up to 72 UTF-8 bytes. Spaces and passphrases are allowed." : "Password length looks good. Avoid reusing a password from another service.");
       status.style.color = message ? "#a11919" : "#526579";
     }
     return !message;
