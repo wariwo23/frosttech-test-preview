@@ -24,13 +24,13 @@ The migration is reconstructed from the live isolated-test table catalog and che
 ## Audit trail and interface compatibility update
 
 The migration candidate now includes an append-only audit mechanism for journal headers and journal lines:
-- AFTER INSERT/UPDATE/DELETE triggers capture old/new row snapshots, table name, record UUID, action, authenticated actor (when present), and timestamp.
+- AFTER INSERT/UPDATE/DELETE triggers capture old/new row snapshots, table name, record UUID, action, authenticated actor (when present), and timestamp across accounts, bank accounts, bank transactions, documents, expenses, fixed assets, journal headers, journal lines, accounting periods, reconciliations and shareholder loans.
 - Audit writes occur through a SECURITY DEFINER trigger function with an empty search_path; it is not exposed as a browser-callable RPC.
 - A separate trigger rejects UPDATE and DELETE against audit records.
 - Authenticated users receive SELECT only on the audit log, and RLS limits that view to Super Admin or users with `bookkeeping.read`.
 - No direct authenticated INSERT/UPDATE/DELETE privileges are granted on the audit log.
 
-Scope limitation: this first audit mechanism covers journal headers and journal lines only. It does not yet audit changes to expenses, bank transactions, documents, accounting periods, chart of accounts, shareholder loans, fixed assets or reconciliations. Do not describe it as a complete audit of every bookkeeping register.
+Scope limitation: the audit function deliberately excludes its own audit-log table to prevent recursive logging. Document storage_path values are redacted from snapshots; the audit captures metadata and change events, not the private file contents.
 
 The test bookkeeping page now:
 - checks `bookkeeping.reports.read` separately and hides the reports section when absent;
