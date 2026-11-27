@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FrostTech Operations Workspace — Isolated Test</title>
+<style>
+:root {
+    --primary:#063b70;
+    --secondary:#0879c9;
+    --background:#f3f6fa;
+    --border:#dce3eb;
+}
+* { box-sizing:border-box; }
+body {
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:var(--background);
+    color:#172333;
+}
+header {
+    background:var(--primary);
+    color:white;
+    padding:18px;
+}
+header h1 { margin:0 0 6px; font-size:22px; }
+header p { margin:0; }
+main { max-width:1100px; margin:auto; padding:16px; }
+.card {
+    background:white;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px;
+    margin:16px 0;
+}
+.message {
+    padding:12px;
+    border-radius:6px;
+    background:#e8f3ff;
+    color:#06477c;
+    overflow-wrap:anywhere;
+}
+.error { background:#ffebee; color:#a11919; }
+.success-message { background:#e7f6ec; color:#176534; }
+.super-admin-workspaces { margin-top:14px; padding:14px; border:1px solid var(--border); border-radius:8px; background:#f7fafc; }
+.super-admin-workspaces h3 { margin:0 0 8px; color:var(--primary); }
+.workspace-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.workspace-links a { display:inline-block; padding:10px 13px; border-radius:6px; background:var(--secondary); color:#fff; text-decoration:none; font-weight:bold; }
+.workspace-links a:focus-visible { outline:3px solid #f0b429; outline-offset:2px; }
+.preview-notice {
+    background:#fff4d6;
+    color:#704b00;
+    border:1px solid #e8cf87;
+    padding:14px;
+    border-radius:7px;
+    margin:14px 0;
+}
+button {
+    background:var(--secondary);
+    color:white;
+    border:0;
+    border-radius:6px;
+    padding:11px 16px;
+    font:inherit;
+    font-weight:bold;
+    cursor:pointer;
+}
+button:disabled { opacity:.6; cursor:wait; }
+.secondary-button { background:#536779; }
+.small-button { padding:8px 10px; font-size:12px; }
+.danger-button { background:#a72c2c; }
+.hidden { display:none !important; }
+.section-heading {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+.section-heading h2 { margin:0; }
+.table-wrap { overflow-x:auto; margin-top:14px; }
+table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    min-width:650px;
+}
+th,td {
+    border:1px solid var(--border);
+    padding:10px;
+    text-align:left;
+    vertical-align:top;
+    overflow-wrap:anywhere;
+}
+th { background:#edf3f8; }
+.empty { color:#667788; padding:12px 0; }
+.record-count { color:#536779; font-size:13px; margin-top:10px; }
+.action-cell { min-width:125px; }
+.delivery-card {
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:15px;
+    margin:14px 0;
+    background:#fff;
+}
+.delivery-card h3 { margin:0 0 10px; color:var(--primary); }
+.delivery-details {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:9px;
+    margin:12px 0;
+}
+.detail {
+    background:#f5f8fb;
+    border-radius:6px;
+    padding:9px;
+    overflow-wrap:anywhere;
+}
+.detail strong {
+    display:block;
+    font-size:12px;
+    color:#526477;
+    margin-bottom:4px;
+}
+.delivery-actions {
+    border-top:1px solid var(--border);
+    margin-top:14px;
+    padding-top:14px;
+}
+.form-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:12px;
+}
+.field { margin-bottom:12px; }
+.field label {
+    display:block;
+    font-weight:bold;
+    font-size:13px;
+    margin-bottom:6px;
+}
+.field input,.field select,.field textarea {
+    width:100%;
+    border:1px solid #bdc9d5;
+    border-radius:6px;
+    padding:10px;
+    font:inherit;
+    background:white;
+}
+.field textarea {
+    min-height:75px;
+    resize:vertical;
+}
+.field small { color:#687888; }
+.form-actions {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:8px;
+}
+.contact-log {
+    border-left:3px solid var(--secondary);
+    background:#f5f8fb;
+    padding:10px;
+    margin:9px 0;
+    border-radius:4px;
+    font-size:13px;
+}
+.contact-log p { margin:5px 0; }
+.subheading {
+    margin:18px 0 10px;
+    font-size:16px;
+}
+.readonly-label {
+    color:#647789;
+    font-size:12px;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>FrostTech HVAC and Refrigeration</h1>
+    <p>Operations Workspace · Isolated Test Environment</p>
+    <p style="margin-top:10px"><a href="department-command-center-test.html?department=operations" style="color:#fff;font-weight:bold">← Return to Operations</a></p>
+</header>
+
+<main>
+<section class="card">
+    <h2 id="pageTitle">Verifying administrator access</h2>
+
+    <p id="status" class="message" role="status">
+        Please wait while your access is checked.
+    </p>
+
+    <div id="departmentPanel" class="hidden">
+        <p>Signed in as: <strong id="adminEmail"></strong></p>
+        <p>Department: <strong id="adminRole"></strong></p>
+
+        <div id="previewNotice" class="preview-notice hidden">
+            <strong>SUPER ADMIN PREVIEW MODE</strong>
+            <p>
+                You are viewing the Operations dashboard as Super Administrator.
+                This is a read-only preview. Departmental actions are disabled.
+                No employee appointment or role change is being made.
+            </p>
+        </div>
+
+        <div id="superAdminWorkspaces" class="super-admin-workspaces hidden">
+            <h3>Super Administrator Preview</h3>
+            <p>Super Administrator access is available independently of departmental appointments. This isolated test workspace is read-only in preview mode. Return to the Command Center to open another test department.</p>
+        </div>
+
+        <button id="refreshAllButton" type="button">
+            Refresh All Records
+        </button>
+
+        <button id="logoutButton" type="button" class="secondary-button">
+            Log Out
+        </button>
+    </div>
+</section>
+
+<div id="operationsDashboard" class="hidden">
+
+    <section class="card">
+        <div class="section-heading">
+            <h2>Customer Requests</h2>
+            <button type="button" data-refresh="requests">Refresh</button>
+        </div>
+        <p id="requestsStatus" class="message">
+            Waiting to load customer requests.
+        </p>
+        <div id="requestsTable"></div>
+    </section>
+
+    <section class="card">
+        <div class="section-heading">
+            <h2>Quotations</h2>
+            <button type="button" data-refresh="quotations">Refresh</button>
+        </div>
+        <p id="quotationsStatus" class="message">
+            Waiting to load quotations.
+        </p>
+        <div id="quotationsTable"></div>
+    </section>
+
+    <section class="card">
+        <div class="section-heading">
+            <h2>Orders</h2>
+            <button type="button" data-refresh="orders">Refresh</button>
+        </div>
+        <p id="ordersStatus" class="message">
+            Waiting to load orders.
+        </p>
+        <div id="ordersTable"></div>
+    </section>
+
+    <section class="card">
+        <div class="section-heading">
+            <h2>Order Items</h2>
+            <button type="button" data-refresh="orderItems">Refresh</button>
+        </div>
+        <p id="orderItemsStatus" class="message">
+            Waiting to load order items.
+        </p>
+        <div id="orderItemsTable"></div>
+    </section>
+
+    <section class="card">
+        <div class="section-heading">
+            <h2>Delivery Management</h2>
+            <button type="button" data-refresh="deliveries">Refresh</button>
+        </div>
+        <p id="deliveriesStatus" class="message">
+            Waiting to load deliveries.
+        </p>
+        <div id="deliveriesTable"></div>
+    </section>
+</div>
+
+<section id="otherDepartmentMessage" class="card hidden">
+    <h2>Departmental access verified</h2>
+    <p id="departmentPortalDescription">
+        Open your authorised departmental workspace below.
+    </p>
+    <p><a id="departmentPortalLink" href="#" style="font-weight:bold;color:#0879c9;">Open Department Portal</a></p>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-test.js"></script>
+<script>
+"use strict";
+
+const db = window.supabaseClient;
+if (!db) {
+    throw new Error("The isolated FrostTech test database client did not load.");
+}
+
+const roleNames = {
+    operations_admin:"Operations Administration",
+    supplier_admin:"Supplier Administration",
+    finance_admin:"Finance Administration",
+    catalogue_admin:"Catalogue Administration",
+    super_admin:"Super Administrator — Preview"
+};
+
+let previewMode = false;
+let currentRole = null;
+let orderRows = [];
+
+const displayFields = [
+    "id",
+    "reference",
+    "quotation_number",
+    "request_number",
+    "order_number",
+    "customer_name",
+    "customer_email",
+    "customer_phone",
+    "name",
+    "email",
+    "phone",
+    "subject",
+    "product_name",
+    "product",
+    "description",
+    "message",
+    "quantity",
+    "unit",
+    "selling_price",
+    "unit_price",
+    "subtotal",
+    "delivery_fee",
+    "additional_charges",
+    "discount",
+    "total_amount",
+    "status",
+    "payment_status",
+    "delivery_status",
+    "tracking_number",
+    "assigned_to",
+    "driver_phone",
+    "delivery_address",
+    "scheduled_delivery_at",
+    "delivery_window_end_at",
+    "tracking_note",
+    "address",
+    "city",
+    "state",
+    "created_at",
+    "updated_at"
+];
+
+const modules = {
+    requests:{
+        rpc:"ops_list_customer_requests",
+        status:"requestsStatus",
+        table:"requestsTable"
+    },
+    quotations:{
+        rpc:"ops_list_quotations",
+        status:"quotationsStatus",
+        table:"quotationsTable"
+    },
+    orders:{
+        rpc:"ops_list_orders",
+        status:"ordersStatus",
+        table:"ordersTable"
+    },
+    orderItems:{
+        rpc:"ops_list_order_items",
+        status:"orderItemsStatus",
+        table:"orderItemsTable"
+    },
+    deliveries:{
+        rpc:"ops_list_deliveries",
+        status:"deliveriesStatus",
+        table:"deliveriesTable"
+    }
+};
+
+const statusBox = document.getElementById("status");
+
+function setStatus(elementId,message,type="normal") {
+    const element = document.getElementById(elementId);
+    element.textContent = message;
+    element.classList.toggle("error",type==="error");
+    element.classList.toggle(
+        "success-message",
+        type==="success"
+    );
+}
+
+function deny(message) {
+    statusBox.textContent = message;
+    statusBox.classList.add("error");
+    document.getElementById("pageTitle").textContent =
+        "Access not available";
+}
+
+function normaliseRows(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.records)) return data.records;
+    if (data && Array.isArray(data.data)) return data.data;
+    return [];
+}
+
+function formatValue(value) {
+    if (value===null || value===undefined) return "";
+    if (typeof value==="object") return JSON.stringify(value);
+    return String(value);
+}
+
+function formatDate(value) {
+    if (!value) return "Not scheduled";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString();
+}
+
+function makeElement(tag,className,text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text!==undefined) element.textContent = text;
+    return element;
+}
+
+function addDetail(container,label,value) {
+    const detail = makeElement("div","detail");
+    detail.appendChild(makeElement("strong","",label));
+    detail.appendChild(
+        document.createTextNode(
+            value===null || value===undefined || value===""
+                ? "Not provided"
+                : formatValue(value)
+        )
+    );
+    container.appendChild(detail);
+}
+
+function addField(parent,label,type,value,placeholder) {
+    const wrapper = makeElement("div","field");
+    const id = "field_"+Math.random().toString(36).slice(2);
+
+    const caption = makeElement("label","",label);
+    caption.htmlFor = id;
+
+    let control;
+
+    if (type==="textarea") {
+        control = document.createElement("textarea");
+    } else {
+        control = document.createElement("input");
+        control.type = type;
+    }
+
+    control.id = id;
+    control.value = value || "";
+    if (placeholder) control.placeholder = placeholder;
+
+    wrapper.appendChild(caption);
+    wrapper.appendChild(control);
+    parent.appendChild(wrapper);
+
+    return control;
+}
+
+function addSelect(parent,label,options,currentValue) {
+    const wrapper = makeElement("div","field");
+    const id = "field_"+Math.random().toString(36).slice(2);
+
+    const caption = makeElement("label","",label);
+    caption.htmlFor = id;
+
+    const select = document.createElement("select");
+    select.id = id;
+
+    options.forEach(option => {
+        const item = document.createElement("option");
+        item.value = option.value;
+        item.textContent = option.label;
+        select.appendChild(item);
+    });
+
+    if (currentValue) select.value = currentValue;
+
+    wrapper.appendChild(caption);
+    wrapper.appendChild(select);
+    parent.appendChild(wrapper);
+
+    return select;
+}
+
+function renderTable(containerId,rows,moduleName) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+
+    if (!rows.length) {
+        container.appendChild(
+            makeElement("p","empty","No records were returned.")
+        );
+        return;
+    }
+
+    const keys = displayFields.filter(key =>
+        rows.some(row =>
+            Object.prototype.hasOwnProperty.call(row,key)
+        )
+    );
+
+    if (!keys.length) {
+        container.appendChild(
+            makeElement(
+                "p",
+                "empty",
+                "Records were returned, but no approved display fields were found."
+            )
+        );
+        return;
+    }
+
+    const wrapper = makeElement("div","table-wrap");
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+
+    keys.forEach(key => {
+        const th = document.createElement("th");
+        th.textContent = key.replaceAll("_"," ");
+        headerRow.appendChild(th);
+    });
+
+    if (moduleName==="requests") {
+        const actionHeading = document.createElement("th");
+        actionHeading.textContent = "Action";
+        headerRow.appendChild(actionHeading);
+    }
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    rows.forEach(row => {
+        const tr = document.createElement("tr");
+
+        keys.forEach(key => {
+            const td = document.createElement("td");
+            td.textContent = formatValue(row[key]);
+            tr.appendChild(td);
+        });
+
+        if (moduleName==="requests") {
+            const actionCell = document.createElement("td");
+            actionCell.className = "action-cell";
+
+            if (previewMode) {
+                actionCell.textContent = "Preview only";
+            } else if (row.status==="pending" && row.id) {
+                const actionButton = makeElement(
+                    "button",
+                    "small-button",
+                    "Mark Reviewing"
+                );
+
+                actionButton.type = "button";
+                actionButton.addEventListener("click",() => {
+                    markRequestReviewing(row.id,actionButton);
+                });
+
+                actionCell.appendChild(actionButton);
+            } else if (row.status==="reviewing") {
+                actionCell.textContent = "Under review";
+            } else {
+                actionCell.textContent = "No action available";
+            }
+
+            tr.appendChild(actionCell);
+        }
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+    container.appendChild(wrapper);
+
+    container.appendChild(
+        makeElement(
+            "p",
+            "record-count",
+            rows.length+" record(s) displayed."
+        )
+    );
+}
+
+async function markRequestReviewing(requestId,button) {
+    if (previewMode || !requestId || button.disabled) return;
+
+    button.disabled = true;
+    setStatus("requestsStatus","Updating customer request...");
+
+    try {
+        const {data,error} = await db.rpc(
+            "ops_mark_request_reviewing",
+            {p_request_id:requestId}
+        );
+
+        if (error) {
+            console.error("Request status update:",error);
+            setStatus(
+                "requestsStatus",
+                "The request could not be updated. Please refresh and try again.",
+                "error"
+            );
+            button.disabled = false;
+            return;
+        }
+
+        if (data!==true) {
+            setStatus(
+                "requestsStatus",
+                "The request was not changed. It may already have been updated or may no longer be available.",
+                "error"
+            );
+            button.disabled = false;
+            await loadModule("requests");
+            return;
+        }
+
+        setStatus(
+            "requestsStatus",
+            "Customer request successfully marked as Reviewing.",
+            "success"
+        );
+
+        await loadModule("requests");
+
+    } catch (error) {
+        console.error(error);
+        setStatus(
+            "requestsStatus",
+            "An unexpected error occurred. Please refresh the request list.",
+            "error"
+        );
+        button.disabled = false;
+    }
+}
+
+/* DELIVERY MANAGEMENT */
+
+function renderDeliveryCard(delivery) {
+    const card = makeElement("article","delivery-card");
+
+    const heading = makeElement(
+        "h3",
+        "",
+        "Delivery — "+(delivery.order_number || delivery.order_id || delivery.id)
+    );
+    card.appendChild(heading);
+
+    const details = makeElement("div","delivery-details");
+
+    addDetail(details,"Delivery ID",delivery.id);
+    addDetail(details,"Order number",delivery.order_number);
+    addDetail(details,"Delivery status",delivery.status);
+    const linkedOrder = orderRows.find(
+    order => order.id === delivery.order_id
+);
+
+addDetail(
+    details,
+    "Order fulfilment status",
+    linkedOrder ? linkedOrder.status : "Order status unavailable"
+);
+
+addDetail(
+    details,
+    "Order payment status",
+    linkedOrder ? linkedOrder.payment_status : "Not available"
+);
+    addDetail(details,"Assigned driver",delivery.assigned_to);
+    addDetail(details,"Driver phone",delivery.driver_phone);
+    addDetail(details,"Delivery address",delivery.delivery_address);
+    addDetail(details,"Scheduled delivery",formatDate(delivery.scheduled_delivery_at));
+    addDetail(details,"Delivery window ends",formatDate(delivery.delivery_window_end_at));
+    addDetail(details,"Tracking note",delivery.tracking_note);
+
+    card.appendChild(details);
+
+    if (previewMode) {
+        card.appendChild(
+            makeElement(
+                "p",
+                "readonly-label",
+                "Super Admin Preview — delivery actions are disabled."
+            )
+        );
+        return card;
+    }
+
+    const actions = makeElement("div","delivery-actions");
+
+    /* Schedule and driver assignment form */
+
+    actions.appendChild(
+        makeElement("h4","subheading","Schedule and Driver Assignment")
+    );
+
+    const scheduleGrid = makeElement("div","form-grid");
+
+    const scheduledInput = addField(
+        scheduleGrid,
+        "Scheduled delivery date and time",
+        "datetime-local",
+        toDateTimeLocal(delivery.scheduled_delivery_at)
+    );
+
+    const windowInput = addField(
+        scheduleGrid,
+        "Delivery window end (optional)",
+        "datetime-local",
+        toDateTimeLocal(delivery.delivery_window_end_at)
+    );
+
+    const driverInput = addField(
+        scheduleGrid,
+        "Driver / person assigned",
+        "text",
+        delivery.assigned_to || "",
+        "Driver name"
+    );
+
+    const phoneInput = addField(
+        scheduleGrid,
+        "Driver phone",
+        "tel",
+        delivery.driver_phone || "",
+        "Driver contact number"
+    );
+
+    const addressInput = addField(
+        scheduleGrid,
+        "Delivery address",
+        "text",
+        delivery.delivery_address || "",
+        "Confirmed delivery address"
+    );
+
+    const trackingInput = addField(
+        scheduleGrid,
+        "Scheduling or tracking note",
+        "textarea",
+        delivery.tracking_note || "",
+        "Operational details"
+    );
+
+    actions.appendChild(scheduleGrid);
+
+    const scheduleButtons = makeElement("div","form-actions");
+
+    const saveScheduleButton = makeElement(
+        "button",
+        "",
+        "Save Delivery Arrangements"
+    );
+    saveScheduleButton.type = "button";
+
+    saveScheduleButton.addEventListener("click",async () => {
+        if (previewMode) return;
+
+        if (!scheduledInput.value) {
+            setStatus(
+                "deliveriesStatus",
+                "Please enter the scheduled delivery date and time.",
+                "error"
+            );
+            scheduledInput.focus();
+            return;
+        }
+
+        if (
+            windowInput.value &&
+            new Date(windowInput.value) < new Date(scheduledInput.value)
+        ) {
+            setStatus(
+                "deliveriesStatus",
+                "The delivery window end cannot be earlier than the scheduled start.",
+                "error"
+            );
+            return;
+        }
+
+        saveScheduleButton.disabled = true;
+        setStatus("deliveriesStatus","Saving delivery arrangements...");
+
+        try {
+            const {error} = await db.rpc(
+                "ops_schedule_delivery",
+                {
+                    p_delivery_id:delivery.id,
+                    p_scheduled_delivery_at:new Date(
+                        scheduledInput.value
+                    ).toISOString(),
+                    p_delivery_window_end_at:windowInput.value
+                        ? new Date(windowInput.value).toISOString()
+                        : null,
+                    p_assigned_to:driverInput.value.trim() || null,
+                    p_driver_phone:phoneInput.value.trim() || null,
+                    p_delivery_address:addressInput.value.trim() || null,
+                    p_tracking_note:trackingInput.value.trim() || null
+                }
+            );
+
+            if (error) throw error;
+
+            setStatus(
+                "deliveriesStatus",
+                "Delivery arrangements saved successfully.",
+                "success"
+            );
+
+            await loadModule("deliveries");
+
+        } catch (error) {
+            console.error("Delivery scheduling:",error);
+            setStatus(
+                "deliveriesStatus",
+                error.message || "Could not save delivery arrangements.",
+                "error"
+            );
+        } finally {
+            saveScheduleButton.disabled = false;
+        }
+    });
+
+    scheduleButtons.appendChild(saveScheduleButton);
+    actions.appendChild(scheduleButtons);
+
+    /* Delivery progress form */
+
+    actions.appendChild(
+        makeElement("h4","subheading","Update Delivery Progress")
+    );
+
+    const progressGrid = makeElement("div","form-grid");
+
+    const statusOptions = [
+        {value:"pending",label:"Pending"},
+        {value:"assigned",label:"Assigned"},
+        {value:"picked_up",label:"Picked Up"},
+        {value:"in_transit",label:"In Transit"},
+        {value:"delivered",label:"Delivered"},
+        {value:"failed",label:"Failed"},
+        {value:"cancelled",label:"Cancelled"}
+    ];
+
+    const statusSelect = addSelect(
+        progressGrid,
+        "New delivery status",
+        statusOptions,
+        delivery.status
+    );
+
+    const progressNote = addField(
+        progressGrid,
+        "Progress note",
+        "textarea",
+        "",
+        "Enter the latest delivery progress or reason for failure"
+    );
+
+    actions.appendChild(progressGrid);
+
+    const progressButton = makeElement(
+        "button",
+        "small-button",
+        "Update Delivery Status"
+    );
+    progressButton.type = "button";
+
+    progressButton.addEventListener("click",async () => {
+        if (previewMode) return;
+
+        if (statusSelect.value===delivery.status) {
+            setStatus(
+                "deliveriesStatus",
+                "Select a different delivery status before updating.",
+                "error"
+            );
+            return;
+        }
+
+        progressButton.disabled = true;
+        setStatus("deliveriesStatus","Updating delivery progress...");
+
+        try {
+            const {error} = await db.rpc(
+                "ops_update_delivery_status",
+                {
+                    p_delivery_id:delivery.id,
+                    p_new_status:statusSelect.value,
+                    p_tracking_note:progressNote.value.trim() || null
+                }
+            );
+
+            if (error) throw error;
+
+            setStatus(
+                "deliveriesStatus",
+                "Delivery progress updated successfully.",
+                "success"
+            );
+
+            await loadModule("orders");
+await loadModule("deliveries");
+
+        } catch (error) {
+            console.error("Delivery status:",error);
+            setStatus(
+                "deliveriesStatus",
+                error.message || "The delivery status could not be updated.",
+                "error"
+            );
+        } finally {
+            progressButton.disabled = false;
+        }
+    });
+
+    actions.appendChild(progressButton);
+
+    /* Customer contact form */
+
+    actions.appendChild(
+        makeElement("h4","subheading","Record Customer Contact")
+    );
+
+    const contactGrid = makeElement("div","form-grid");
+
+    const contactMethod = addSelect(
+        contactGrid,
+        "Contact method",
+        [
+            {value:"phone",label:"Phone call"},
+            {value:"whatsapp",label:"WhatsApp"},
+            {value:"email",label:"Email"},
+            {value:"sms",label:"SMS"},
+            {value:"other",label:"Other"}
+        ],
+        "phone"
+    );
+
+    const contactSummary = addField(
+        contactGrid,
+        "Contact summary",
+        "textarea",
+        "",
+        "What was discussed with the customer?"
+    );
+
+    const contactOutcome = addField(
+        contactGrid,
+        "Contact outcome",
+        "textarea",
+        "",
+        "Was the customer reached? What was agreed?"
+    );
+
+    const nextFollowUp = addField(
+        contactGrid,
+        "Next follow-up date and time (optional)",
+        "datetime-local",
+        ""
+    );
+
+    actions.appendChild(contactGrid);
+
+    const contactButton = makeElement(
+        "button",
+        "small-button",
+        "Save Customer Contact"
+    );
+    contactButton.type = "button";
+
+    contactButton.addEventListener("click",async () => {
+        if (previewMode) return;
+
+        if (!contactSummary.value.trim()) {
+            setStatus(
+                "deliveriesStatus",
+                "Enter a contact summary before saving.",
+                "error"
+            );
+            contactSummary.focus();
+            return;
+        }
+
+        contactButton.disabled = true;
+        setStatus("deliveriesStatus","Saving customer contact...");
+
+        try {
+            const {error} = await db.rpc(
+                "ops_log_delivery_customer_contact",
+                {
+                    p_delivery_id:delivery.id,
+                    p_contact_method:contactMethod.value,
+                    p_contact_summary:contactSummary.value.trim(),
+                    p_contact_outcome:contactOutcome.value.trim() || null,
+                    p_next_follow_up_at:nextFollowUp.value
+                        ? new Date(nextFollowUp.value).toISOString()
+                        : null
+                }
+            );
+
+            if (error) throw error;
+
+            setStatus(
+                "deliveriesStatus",
+                "Customer contact record saved successfully.",
+                "success"
+            );
+
+            contactSummary.value = "";
+            contactOutcome.value = "";
+            nextFollowUp.value = "";
+
+            await loadContactHistory(delivery.id,historyContainer);
+
+        } catch (error) {
+            console.error("Customer contact:",error);
+            setStatus(
+                "deliveriesStatus",
+                error.message || "Could not save customer contact.",
+                "error"
+            );
+        } finally {
+            contactButton.disabled = false;
+        }
+    });
+
+    actions.appendChild(contactButton);
+
+    /* Contact history */
+
+    actions.appendChild(
+        makeElement("h4","subheading","Customer Contact History")
+    );
+
+    const historyContainer = makeElement(
+        "div",
+        "contact-history",
+        "Contact history has not been loaded."
+    );
+
+    const historyButton = makeElement(
+        "button",
+        "secondary-button small-button",
+        "Load Contact History"
+    );
+    historyButton.type = "button";
+
+    historyButton.addEventListener("click",async () => {
+        await loadContactHistory(delivery.id,historyContainer);
+    });
+
+    actions.appendChild(historyButton);
+    actions.appendChild(historyContainer);
+
+    card.appendChild(actions);
+
+    return card;
+}
+
+function toDateTimeLocal(value) {
+    if (!value) return "";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+
+    const local = new Date(
+        date.getTime()-date.getTimezoneOffset()*60000
+    );
+
+    return local.toISOString().slice(0,16);
+}
+
+async function loadContactHistory(deliveryId,container) {
+    container.textContent = "Loading customer contact history...";
+
+    try {
+        const {data,error} = await db.rpc(
+            "ops_list_delivery_contact_logs",
+            {p_delivery_id:deliveryId}
+        );
+
+        if (error) throw error;
+
+        const rows = normaliseRows(data);
+        container.replaceChildren();
+
+        if (!rows.length) {
+            container.appendChild(
+                makeElement(
+                    "p",
+                    "empty",
+                    "No customer contact records have been recorded for this delivery."
+                )
+            );
+            return;
+        }
+
+        rows.forEach(row => {
+            const log = makeElement("div","contact-log");
+
+            log.appendChild(
+                makeElement(
+                    "strong",
+                    "",
+                    (row.contact_method || "Contact").toUpperCase()
+                )
+            );
+
+            log.appendChild(
+                makeElement(
+                    "p",
+                    "",
+                    "Contacted: "+formatDate(row.contacted_at)
+                )
+            );
+
+            log.appendChild(
+                makeElement(
+                    "p",
+                    "",
+                    "Staff: "+(row.contacted_by_name || "Not available")
+                )
+            );
+
+            log.appendChild(
+                makeElement(
+                    "p",
+                    "",
+                    "Summary: "+(row.contact_summary || "")
+                )
+            );
+
+            if (row.contact_outcome) {
+                log.appendChild(
+                    makeElement(
+                        "p",
+                        "",
+                        "Outcome: "+row.contact_outcome
+                    )
+                );
+            }
+
+            if (row.next_follow_up_at) {
+                log.appendChild(
+                    makeElement(
+                        "p",
+                        "",
+                        "Next follow-up: "+formatDate(row.next_follow_up_at)
+                    )
+                );
+            }
+
+            container.appendChild(log);
+        });
+
+    } catch (error) {
+        console.error("Contact history:",error);
+        container.textContent =
+            error.message || "Could not load customer contact history.";
+    }
+}
+
+function renderDeliveries(containerId,rows) {
+    const container = document.getElementById(containerId);
+    container.replaceChildren();
+
+    if (!rows.length) {
+        container.appendChild(
+            makeElement(
+                "p",
+                "empty",
+                "No delivery records were returned."
+            )
+        );
+        return;
+    }
+
+    rows.forEach(delivery => {
+        container.appendChild(renderDeliveryCard(delivery));
+    });
+
+    container.appendChild(
+        makeElement(
+            "p",
+            "record-count",
+            rows.length+" delivery record(s) displayed."
+        )
+    );
+}
+
+/* LOAD DASHBOARD MODULES */
+
+async function loadModule(moduleName) {
+    const module = modules[moduleName];
+    if (!module) return;
+
+    setStatus(module.status,"Loading records...");
+
+    const buttons = document.querySelectorAll(
+        '[data-refresh="'+moduleName+'"]'
+    );
+    buttons.forEach(button => button.disabled=true);
+
+    try {
+        const {data,error} = await db.rpc(module.rpc);
+
+        if (error) {
+            console.error(module.rpc,error);
+            setStatus(
+                module.status,
+                "Could not load these records. Please check the administrator session and database permissions.",
+                "error"
+            );
+            return;
+        }
+
+        const rows = normaliseRows(data);
+        if (moduleName === "orders") {
+    orderRows = rows;
+}
+
+        if (moduleName==="deliveries") {
+            renderDeliveries(module.table,rows);
+        } else {
+            renderTable(module.table,rows,moduleName);
+        }
+
+        setStatus(module.status,"Records loaded successfully.");
+
+    } catch (error) {
+        console.error(error);
+        setStatus(
+            module.status,
+            "An unexpected error occurred while loading records.",
+            "error"
+        );
+    } finally {
+        buttons.forEach(button => button.disabled=false);
+    }
+}
+
+async function refreshAll() {
+    const button = document.getElementById("refreshAllButton");
+    button.disabled = true;
+
+    try {
+        for (const moduleName of Object.keys(modules)) {
+            await loadModule(moduleName);
+        }
+    } finally {
+        button.disabled = false;
+    }
+}
+
+/* ACCESS CONTROL */
+
+async function start() {
+    try {
+        const {data:userData,error:userError} =
+            await db.auth.getUser();
+
+        if (userError || !userData.user) {
+            deny(
+                "Please sign in through the FrostTech administrator login."
+            );
+            return;
+        }
+
+        const {data:role,error:roleError} =
+            await db.rpc("admin_get_my_role");
+
+        if (roleError) {
+            console.error(roleError);
+            deny(
+                "Could not verify your administrator role. Please contact the Super Administrator."
+            );
+            return;
+        }
+
+        if (!role) {
+            deny(
+                "An active authorised FrostTech administrator account is required."
+            );
+            return;
+        }
+
+        previewMode = role==="super_admin";
+        const requiredPermissions = [
+            "customer_requests.manage",
+            "deliveries.manage",
+            "orders.manage",
+            "quotations.read_operational"
+        ];
+        if (!previewMode) {
+            const checks = await Promise.all(requiredPermissions.map(async permission => {
+                const {data,error} = await db.rpc("admin_has_permission", {
+                    required_permission: permission
+                });
+                if (error) throw error;
+                return data === true;
+            }));
+            if (!checks.every(Boolean)) {
+                deny("Operations workspace access requires its customer-request, order, quotation and delivery permissions.");
+                return;
+            }
+        }
+
+        currentRole = role;
+
+        document.getElementById("pageTitle").textContent =
+            previewMode
+                ? "Departmental Dashboard — Preview"
+                : "Departmental Dashboard";
+
+        document.getElementById("adminEmail").textContent =
+            userData.user.email || "Signed-in administrator";
+
+        document.getElementById("adminRole").textContent =
+            roleNames[role] || role.replaceAll("_"," ");
+
+        statusBox.textContent = previewMode
+            ? "Super Administrator access verified. Preview mode is read-only."
+            : "Your departmental administrator access has been verified.";
+
+        document.getElementById("departmentPanel")
+            .classList.remove("hidden");
+
+        if (previewMode) {
+            document.getElementById("previewNotice")
+                .classList.remove("hidden");
+            document.getElementById("superAdminWorkspaces")
+                .classList.remove("hidden");
+        }
+
+        // The entry checks above already established every required Operations permission.
+        // Super Administrator retains the existing read-only preview.
+        if (previewMode || role === "operations_admin") {
+            document.getElementById("operationsDashboard")
+                .classList.remove("hidden");
+
+            await refreshAll();
+        } else {
+            const portalLink = document.getElementById("departmentPortalLink");
+            const portalDescription = document.getElementById("departmentPortalDescription");
+
+            if (role==="catalogue_admin") {
+                portalLink.href = "admin-command-center-test.html";
+                portalLink.textContent = "Open Catalogue Administration";
+                portalDescription.textContent = "Manage approved product details, selling prices, stock levels and catalogue status. Supplier-cost fields are not available in this portal.";
+            } else if (role==="supplier_admin") {
+                portalLink.href = "admin-command-center-test.html";
+                portalLink.textContent = "Open Supplier Administration";
+                portalDescription.textContent = "Review supplier applications, record verification decisions, manage submitted supplier quotations and select or reject supplier quotations. Supplier-cost records and internal pricing remain restricted to the Super Administrator.";
+            } else if (role==="finance_admin") {
+                portalLink.href = "department-command-center-test.html";
+                portalLink.textContent = "Open Finance Administration";
+                portalDescription.textContent = "Open the Finance, Payments & Tax mini command center.";
+            } else if (role==="supplier_admin" || role==="catalogue_admin") {
+                portalLink.href = "department-command-center-test.html";
+                portalLink.textContent = "Open Supplier & Catalogue Administration";
+                portalDescription.textContent = "Open the consolidated Supplier & Catalogue mini command center. Supplier costs and final supplier selection remain reserved for the Super Administrator.";
+            } else if (role==="advertisers_admin") {
+                portalLink.href = "department-command-center-test.html";
+                portalLink.textContent = "Open Advertisers & Communications Administration";
+                portalDescription.textContent = "Open the Advertisers & Communications mini command center.";
+            }
+
+            document.getElementById("otherDepartmentMessage")
+                .classList.remove("hidden");
+        }
+
+    } catch (error) {
+        console.error(error);
+        deny(
+            "An unexpected error occurred while checking access. Please try again."
+        );
+    }
+}
+
+/* BUTTON EVENTS */
+
+document.querySelectorAll("[data-refresh]").forEach(button => {
+    button.addEventListener("click",() => {
+        loadModule(button.dataset.refresh);
+    });
+});
+
+document.getElementById("refreshAllButton")
+    .addEventListener("click",refreshAll);
+
+document.getElementById("logoutButton")
+    .addEventListener("click",async () => {
+        const button = document.getElementById("logoutButton");
+        button.disabled = true;
+
+        const {error} = await db.auth.signOut();
+
+        if (error) {
+            button.disabled = false;
+            setStatus(
+                "status",
+                "Logout failed. Please try again.",
+                "error"
+            );
+            return;
+        }
+
+        window.location.href = "test-admin-login.html";
+    });
+
+start();
+</script>
+</body>
+</html>

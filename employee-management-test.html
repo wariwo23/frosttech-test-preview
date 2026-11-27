@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Employee Management | FrostTech TEST</title>
+<style>
+:root{--navy:#063b70;--blue:#0879c9;--bg:#f3f6fa;--line:#dce3eb;--ink:#172333}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:var(--navy);color:#fff;padding:18px}header a{color:#fff}main{max-width:1050px;margin:auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin:14px 0}
+button{border:0;border-radius:6px;padding:10px 13px;background:var(--blue);color:#fff;font:inherit;cursor:pointer;margin:4px 4px 4px 0}
+button.secondary{background:#536579}button:disabled{opacity:.55;cursor:not-allowed}
+input,select{width:100%;padding:11px;border:1px solid #bbc7d4;border-radius:6px;font:inherit;margin:6px 0 12px}
+label{font-weight:bold}.message{padding:11px;border-radius:6px;background:#e8f3ff;color:#06477c;line-height:1.45;overflow-wrap:anywhere}
+.message.error{background:#ffebee;color:#a11919}.message.success{background:#e8f5ed;color:#17633c}
+.hidden{display:none!important}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line);white-space:pre-line}
+.table-wrap{overflow-x:auto}.env{background:#fff7ed;color:#9a3412;padding:8px;border-radius:6px;font-weight:bold;text-align:center}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;padding:18px;z-index:5}.modal section{background:#fff;border-radius:10px;padding:20px;max-width:440px;width:100%}
+</style></head><body>
+<header><h1>FrostTech HVAC and Refrigeration</h1><p>Employee Registration & Onboarding</p><p><a href="super-admin-command-center-test.html">Return to Super Administrator Command Center</a> · <a href="department-operator-management-test.html">Department Operator Management</a></p></header>
+<main><div class="env">ISOLATED TEST ENVIRONMENT — NOT PRODUCTION</div>
+<section class="card"><h2 id="heading">Verifying Super Administrator access</h2><p id="appointmentHold" class="message">Checking launch appointment hold…</p><p id="status" class="message">Please wait…</p><p id="identity" class="hidden">Signed in as <strong id="email"></strong> · Super Administrator</p></section>
+<div id="workspace" class="hidden">
+<section class="card"><h2>Register a FrostTech Employee</h2><p>Creating an employee record does not create an authentication account, send an invitation or grant departmental administrator access.</p>
+<form id="createForm"><div class="grid">
+<label>Full name<input id="fullName" maxlength="160" required></label>
+<label>Email address<input id="emailAddress" type="email" maxlength="254" required></label>
+<label>Job title<input id="jobTitle" maxlength="120" required></label>
+<label>Department<select id="department" required><option value="">Select department</option><option value="operations">Operations</option><option value="supplier_management">Supplier Management</option><option value="finance">Finance</option><option value="catalogue">Catalogue</option></select></label>
+</div><button id="createButton" type="submit">Create Employee Record</button></form>
+<p id="createMessage" class="message" role="status">No employee record has been created in this session.</p></section>
+<section class="card"><h2>Employee Records & Onboarding</h2><button id="refreshButton" type="button" class="secondary">Refresh Employee Records</button><p id="listMessage" class="message">Employee records have not been loaded.</p><div class="table-wrap"><div id="records"></div></div></section>
+</div></main>
+<div id="confirm" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><section><h2 id="confirmTitle">FrostTech HVAC and Refrigeration Marketplace</h2><p id="confirmText"></p><button id="cancel" type="button" class="secondary">Cancel</button><button id="accept" type="button">Confirm</button></section></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script><script>
+"use strict";const db=window.supabaseClient;const $=id=>document.getElementById(id);let employees=[],pendingAction=null,appointmentHold=true;
+function message(id,value,type=""){const el=$(id);el.textContent=value;el.className="message"+(type?" "+type:"");}
+function cell(value){const el=document.createElement("td");el.textContent=value??"";return el;}
+function ask(text,label,fn){$("confirmText").textContent=text;$("accept").textContent=label;pendingAction=fn;$("confirm").classList.remove("hidden");}
+$("cancel").addEventListener("click",()=>{$("confirm").classList.add("hidden");pendingAction=null;});
+$("accept").addEventListener("click",async()=>{if(!pendingAction)return;const fn=pendingAction;$("accept").disabled=true;try{await fn();}catch(e){message("listMessage",e.message||"The requested action failed.","error");}finally{$("accept").disabled=false;$("confirm").classList.add("hidden");pendingAction=null;}});
+async function loadEmployees(){
+ $("refreshButton").disabled=true;message("listMessage","Loading employee records…");$("records").replaceChildren();
+ try{
+  const [{data,error},{data:holdData,error:holdError}]=await Promise.all([db.rpc("admin_list_frosttech_employee_management"),db.rpc("admin_get_appointment_hold_status")]);if(error)throw error;if(holdError)throw holdError;appointmentHold=!!(Array.isArray(holdData)&&holdData[0]?.is_on_hold);$("appointmentHold").textContent=appointmentHold?"APPOINTMENT HOLD ACTIVE — employee activation is disabled until official launch. Invitations and account setup remain separate.":"Appointment hold released by Super Administrator.";
+  employees=Array.isArray(data)?data:[];
+  if(!employees.length){message("listMessage","No employee records have been created yet.","success");return;}
+  const table=document.createElement("table"),head=document.createElement("tr");
+  ["Employee","Department","Employment status","Onboarding actions"].forEach(label=>{const th=document.createElement("th");th.textContent=label;head.append(th);});table.append(head);
+  for(const e of employees){
+   const tr=document.createElement("tr");
+   tr.append(cell((e.full_name||"Employee")+"\n"+(e.email||"")+"\n"+(e.job_title||"")),cell(e.department||"Not assigned"),cell((e.employment_status||"Unknown")+(e.account_setup_completed_at?" · account setup complete":"")));
+   const actions=cell("");
+   if(e.employment_status==="planned"&&!e.auth_user_id){
+    const invite=document.createElement("button");invite.type="button";invite.disabled=true;invite.className="secondary";invite.textContent="Invitation not enabled";
+    invite.title="Test invitation function deployment and email sending require separate approval.";
+    actions.append(invite);
+    const note=document.createElement("p");note.textContent="Invitation testing is paused until the isolated email function is separately approved and deployed.";actions.append(note);
+   }else if(e.employment_status==="invited"&&e.account_setup_completed_at){
+    const activate=document.createElement("button");activate.type="button";activate.textContent=appointmentHold?"Employment Activation On Hold":"Activate Employment";activate.disabled=appointmentHold;
+    if(appointmentHold)activate.title="Activation remains disabled until FrostTech officially launches.";activate.addEventListener("click",()=>{if(appointmentHold)return;ask("Activate employment for "+e.full_name+"? This does not appoint the employee as a departmental administrator.","Activate Employee",async()=>{
+      activate.disabled=true;const {data,error}=await db.rpc("admin_activate_frosttech_employee",{p_employee_id:e.employee_id});if(error)throw error;if(data!==true)throw new Error("Employee activation was not confirmed.");message("listMessage","Employment activated for "+e.full_name+". Departmental access remains a separate Super Administrator action.","success");await loadEmployees();
+    });});actions.append(activate);
+   }else if(e.employment_status==="invited"){actions.textContent="Waiting for employee account setup completion.";}
+   else if(e.employment_status==="active"){actions.textContent="Employment active. Use Department Operator Management to appoint access.";}
+   else{actions.textContent="No onboarding action is available.";}
+   tr.append(actions);table.append(tr);
+  }
+  $("records").append(table);message("listMessage",employees.length+" employee record(s) loaded.","success");
+ }catch(e){message("listMessage",e.message||"Could not load employee records.","error");$("records").textContent="Employee records unavailable.";}
+ finally{$("refreshButton").disabled=false;}
+}
+$("refreshButton").addEventListener("click",loadEmployees);
+$("createForm").addEventListener("submit",async event=>{
+ event.preventDefault();const button=$("createButton");button.disabled=true;
+ try{
+  const {error}=await db.rpc("admin_create_frosttech_employee",{p_full_name:$("fullName").value.trim(),p_email:$("emailAddress").value.trim().toLowerCase(),p_job_title:$("jobTitle").value.trim(),p_department:$("department").value});
+  if(error)throw error;$("createForm").reset();message("createMessage","Employee record created in Planned status. No invitation or administrator access has been issued.","success");await loadEmployees();
+ }catch(e){message("createMessage",e.message||"Employee record could not be created.","error");}
+ finally{button.disabled=false;}
+});
+(async()=>{try{
+ const {data:{user},error:userError}=await db.auth.getUser();if(userError||!user)throw new Error("Please sign in through the test Super Administrator portal.");
+ const {data:role,error}=await db.rpc("admin_get_my_role");if(error)throw error;if(role!=="super_admin")throw new Error("Only the test Super Administrator can register employees.");
+ $("email").textContent=user.email||"";$("identity").classList.remove("hidden");$("workspace").classList.remove("hidden");$("heading").textContent="Employee Registration & Onboarding";message("status","Test Super Administrator access verified.","success");await loadEmployees();
+}catch(e){$("heading").textContent="Access not available";message("status",e.message||"Super Administrator verification failed.","error");}})();
+</script></body></html>

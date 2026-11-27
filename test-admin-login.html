@@ -533,6 +533,14 @@
       const loginSection = document.getElementById("loginSection");
       const activeSessionSection = document.getElementById("activeSessionSection");
       const activeSessionEmail = document.getElementById("activeSessionEmail");
+      const entryMode = new URLSearchParams(window.location.search).get("access");
+      const loginHeading = document.querySelector("#loginSection h2");
+      if (loginHeading && entryMode === "super") {
+        loginHeading.textContent = "Super Administrator Sign In — TEST ENVIRONMENT";
+      } else if (loginHeading && entryMode === "department") {
+        loginHeading.textContent = "Departmental Administrator Sign In — TEST ENVIRONMENT";
+      }
+
       const signOutButton = document.getElementById("signOutButton");
       const resetSection = document.getElementById("resetSection");
       const newPasswordSection =
@@ -562,13 +570,11 @@
 
       async function verifyAdminRole(user) {
         if (!user || user.app_metadata?.account_type === "guest") return null;
-        const { data: profile, error: profileError } = await db
-          .from("profiles").select("id, role, is_active").eq("id", user.id).maybeSingle();
-        if (profileError) throw profileError;
-        if (!profile || profile.is_active !== true || profile.role !== "admin") return null;
+        // The central database function validates the active profile and either
+        // the permanent administrator account or an authorised isolated-test grant.
         const { data: role, error: roleError } = await db.rpc("admin_get_my_role");
         if (roleError) throw roleError;
-        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin"].includes(role) ? role : null;
+        return ["super_admin", "operations_admin", "supplier_admin", "finance_admin", "catalogue_admin", "advertisers_admin"].includes(role) ? role : null;
       }
 
       async function showLoginOrActiveSession() {
@@ -592,11 +598,25 @@
               showMessage("This account is not authorised for the test quotation administration workspace.", "error");
               return;
             }
-            activeSessionEmail.textContent = "Signed in as: " +
-              (data.session.user.email || "Administrator") + " · Role: " +
-              role.replaceAll("_", " ");
-            showSection(activeSessionSection);
-            return;
+            const modeMismatch =
+              (entryMode === "super" && role !== "super_admin") ||
+              (entryMode === "department" && role === "super_admin");
+
+            if (modeMismatch) {
+              activeSessionEmail.textContent = "Signed in as: " +
+                (data.session.user.email || "Administrator") + " · Role: " +
+                role.replaceAll("_", " ");
+              showSection(activeSessionSection);
+              showMessage(
+                entryMode === "super"
+                  ? "This active account is not the Super Administrator. Sign out before using the Super Administrator entrance."
+                  : "The active account is the Super Administrator. Sign out before using a departmental administrator entrance.",
+                "error"
+              );
+              return;
+            }
+
+            window.location.replace(getReturnUrl(role));
           } catch (error) {
             showSection(loginSection);
             showMessage(error.message || "Administrator access could not be verified.", "error");
@@ -637,19 +657,42 @@
 
       function getReturnUrl(role) {
         const params = new URLSearchParams(window.location.search);
-        const defaultDestination = role === "supplier_admin" ? "supplier-applications-test.html" : "admin-independent-quotations-test.html";
-        const requested = params.get("return") || defaultDestination;
+        const defaultDestination = role === "super_admin"
+          ? "super-admin-command-center-test.html"
+          : "department-command-center-test.html";
+        const requested = params.get("return");
+        const allowedDestinations = [
+          "admin-command-center-test.html",
+          "super-admin-command-center-test.html",
+          "department-command-center-test.html",
+          "administration-portal-test.html",
+          "admin-independent-quotations-test.html",
+          "supplier-applications-test.html",
+          "departmental-admin-test.html",
+          "finance-admin-test.html",
+          "tax-admin-test.html",
+          "supplier-settlements-admin-test.html",
+          "employee-management-test.html",
+          "department-operator-management-test.html",
+          "admin-management-test.html",
+          "bookkeeping-admin-test.html"
+        ];
         try {
-          const destination = new URL(requested, window.location.href);
+          const destination = new URL(requested || defaultDestination, window.location.href);
           const currentDirectory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
+          const fileName = destination.pathname.split("/").pop();
           if (destination.origin !== window.location.origin ||
               !destination.pathname.startsWith(currentDirectory) ||
-              !["admin-independent-quotations-test.html", "supplier-applications-test.html"].includes(destination.pathname.split("/").pop())) {
-            return "admin-independent-quotations-test.html";
+              !allowedDestinations.includes(fileName)) {
+            return defaultDestination;
           }
+          if (role !== "super_admin") {
+            return "department-command-center-test.html";
+          }
+          if (fileName === "admin-command-center-test.html") return defaultDestination;
           return destination.href;
         } catch (error) {
-          return "admin-independent-quotations-test.html";
+          return defaultDestination;
         }
       }
 
@@ -763,7 +806,20 @@
               return;
             }
 
-            showMessage("Administrator access verified (" + authorisedRole.replaceAll("_", " ") + "). Opening the test workspace...", "success");
+            const accessMode = new URLSearchParams(window.location.search).get("access");
+            if ((accessMode === "super" && authorisedRole !== "super_admin") ||
+                (accessMode === "department" && authorisedRole === "super_admin")) {
+              await db.auth.signOut({ scope: "local" });
+              showMessage(
+                accessMode === "super"
+                  ? "This sign-in entrance is reserved for the Super Administrator. Please use Departmental Administrator Sign In."
+                  : "The Super Administrator must use the separate Super Administrator sign-in entrance.",
+                "error"
+              );
+              return;
+            }
+
+            showMessage("Administrator access verified (" + authorisedRole.replaceAll("_", " ") + "). Opening the assigned test workspace...", "success");
 
             window.location.href = getReturnUrl(authorisedRole);
           } catch (error) {
@@ -991,7 +1047,20 @@
                 await db.auth.signOut({ scope: "local" });
                 showSection(loginSection);
                 showMessage(
-                    "This account is not authorised for the test quotation administration workspace.",
+                    "This account is not authorised for the test administration workspace.",
+                    "error"
+                );
+                return;
+            }
+
+            const accessMode = new URLSearchParams(window.location.search).get("access");
+            if ((accessMode === "super" && authorisedRole !== "super_admin") ||
+                (accessMode === "department" && authorisedRole === "super_admin")) {
+                showSection(activeSessionSection);
+                showMessage(
+                    accessMode === "super"
+                        ? "The current session is a departmental administrator. Sign out before using Super Administrator sign-in."
+                        : "The current session is the Super Administrator. Use the separate Super Administrator sign-in entrance.",
                     "error"
                 );
                 return;

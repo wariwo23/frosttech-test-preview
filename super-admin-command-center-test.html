@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#082f55"><title>Super Administrator Command Center — FrostTech TEST</title>
+<style>
+:root{--navy:#082f55;--blue:#147fbd;--ice:#eaf5fc;--ink:#172b40;--muted:#64778b;--line:#dce7f0;--bg:#f3f7fb;--green:#18794e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,sans-serif}header{background:linear-gradient(115deg,#062746,#0b4778);color:white;padding:18px 16px;border-bottom:4px solid #55b9ed}.head{max-width:1180px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border-radius:11px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:900}.brand h1{font-size:18px;margin:0}.brand p{font-size:12px;color:#d8eafa;margin:3px 0 0}.actions{display:flex;gap:8px;flex-wrap:wrap}button,a.btn{border:0;border-radius:8px;padding:10px 13px;font:700 13px Arial;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.light{background:#fff;color:var(--navy)}.outline{background:transparent;border:1px solid #9fc7e5;color:#fff}
+main{max-width:1180px;margin:22px auto;padding:0 16px 40px}.panel,.card{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 2px 7px #102b4e08}.welcome{padding:21px;margin-bottom:17px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);font-weight:800}.welcome h2{font-size:25px;margin:5px 0}.welcome p{margin:0;color:var(--muted)}.statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.pill{display:inline-flex;padding:6px 10px;border-radius:30px;background:#edf3f8;color:#42586d;font-size:12px;font-weight:700}.pill.good{background:#e8f5ed;color:var(--green)}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:20px 2px 10px}.section-head h3{font-size:17px;margin:0}.section-head p{font-size:12px;color:var(--muted);margin:3px 0 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{padding:16px;min-width:0}.top{display:flex;align-items:center;gap:10px}.ico{width:38px;height:38px;border-radius:10px;background:var(--ice);display:grid;place-items:center;color:var(--navy);font-size:19px}.card h4{font-size:15px;margin:0}.card p{font-size:12px;color:var(--muted);margin:10px 0 13px;min-height:38px}.card .open{width:100%;background:var(--navy);color:#fff}.card .open:disabled{background:#e7edf2;color:#718093;cursor:not-allowed}.tag{display:inline-block;font-size:11px;color:#8a5b00;background:#fff5dc;border-radius:20px;padding:5px 8px;margin-bottom:9px}.notice{border:1px solid #f0dca7;background:#fff9e9;border-radius:9px;padding:12px;color:#765500;font-size:13px;margin-top:16px}.hidden{display:none!important}.detail{padding:21px}.detail h3{margin:5px 0 7px;font-size:21px}.detail>p{color:var(--muted);margin:0 0 13px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.group-card{border:1px solid var(--line);border-radius:10px;padding:14px}.group-card h4{margin:0 0 7px;font-size:14px}.group-card p{margin:0 0 11px;color:var(--muted);font-size:12px}.group-card button{width:100%;background:var(--navy);color:#fff}.detail-card{border:1px solid var(--line);border-radius:10px;padding:14px}.detail-card h4{margin:0 0 7px;font-size:14px}.detail-card p{margin:0 0 11px;color:var(--muted);font-size:12px}.detail-card a,.detail-card button{width:100%;background:var(--navy);color:white}.detail-card .tag{margin-bottom:8px}footer{max-width:1180px;margin:auto;padding:0 16px 25px;color:var(--muted);font-size:12px}
+@media(max-width:620px){header{padding:15px 12px}.brand h1{font-size:16px}.head{align-items:flex-start}main{margin:13px auto;padding:0 10px 28px}.grid,.detail-grid{grid-template-columns:1fr}.welcome{padding:17px}.welcome h2{font-size:21px}.card{padding:14px}.card p{min-height:0}.section-head{align-items:start;flex-direction:column}}
+
+/* Keep the six Super Administrator groups in exactly two columns on phones and desktop. */
+#groupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,auto);gap:12px;align-items:stretch}
+#groupGrid>.card{min-width:0;display:flex;flex-direction:column}
+#groupGrid>.card p{flex:1}
+@media(max-width:620px){
+#groupGrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,auto);gap:8px}
+#groupGrid>.card{padding:10px}
+#groupGrid>.card .top{align-items:flex-start;gap:7px}
+#groupGrid>.card .ico{width:30px;height:30px;min-width:30px;font-size:16px}
+#groupGrid>.card h4{font-size:12px;line-height:1.3}
+#groupGrid>.card p{font-size:11px;line-height:1.35;min-height:0;margin:8px 0}
+#groupGrid>.card .open{font-size:11px;padding:8px 5px}
+}
+
+/* Subtle light-blue card treatment for the six responsibility groups. */
+#groupGrid>.card{background:#f7fbff;border:1px solid #e1edf6;border-radius:12px;box-shadow:0 1px 3px #102b4e0a}
+#groupGrid>.card .ico{background:#e5f2fb}
+#groupGrid>.card .open{background:#0b4778}
+@media(max-width:620px){#groupGrid>.card{padding:11px}}
+
+
+/* Compact, self-contained responsibility buttons: icon and title only. */
+#groupGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(112px,auto));gap:12px}
+#groupGrid>.group-tile{width:100%;min-width:0;min-height:112px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;white-space:normal;background:#f2f8fd;border:1px solid #dceaf5;border-radius:12px;color:var(--navy);box-shadow:0 1px 3px #102b4e0a;transition:background .15s,border-color .15s,transform .15s}
+#groupGrid>.group-tile:hover,#groupGrid>.group-tile:focus-visible{background:#e6f2fb;border-color:#9fc7e5;outline:2px solid #9fc7e5;outline-offset:2px}
+#groupGrid>.group-tile:active{transform:scale(.985)}
+#groupGrid>.group-tile .ico{width:42px;height:42px;min-width:42px;border-radius:11px;background:#e2eff9;font-size:22px}
+#groupGrid>.group-tile .group-title{display:block;width:100%;max-width:100%;font-size:14px;font-weight:800;line-height:1.3;letter-spacing:.01em;text-align:center;white-space:normal;overflow-wrap:anywhere;word-break:normal;text-wrap:pretty}
+#groupGrid>.group-tile{font-weight:800}
+#groupGrid>.group-tile:hover .group-title{color:#07548a}
+@media(max-width:620px){
+#groupGrid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(104px,auto));gap:9px}
+#groupGrid>.group-tile{min-height:104px;padding:12px 8px;gap:8px}
+#groupGrid>.group-tile .ico{width:36px;height:36px;min-width:36px;font-size:19px}
+#groupGrid>.group-tile .group-title{font-size:12px;font-weight:800;line-height:1.25;white-space:normal;overflow-wrap:anywhere;word-break:normal}
+}
+
+
+/* Final explicit layout and title-wrap rules for the six Super Admin group buttons. */
+#groupGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,minmax(116px,auto))!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+#groupGrid>button.group-tile{
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  flex-wrap:nowrap!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:116px!important;
+  height:auto!important;
+  padding:16px 12px!important;
+  white-space:normal!important;
+  text-align:center!important;
+  font-weight:900!important;
+}
+#groupGrid>button.group-tile>.group-title{
+  display:block!important;
+  flex:0 1 auto!important;
+  align-self:stretch!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  white-space:normal!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+  font-weight:900!important;
+  text-align:center!important;
+}
+@media(max-width:620px){
+  #groupGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-template-rows:repeat(3,minmax(112px,auto))!important;
+    gap:9px!important;
+  }
+  #groupGrid>button.group-tile{
+    min-height:112px!important;
+    padding:13px 8px!important;
+  }
+  #groupGrid>button.group-tile>.group-title{
+    font-size:13px!important;
+    line-height:1.3!important;
+    font-weight:900!important;
+  }
+}
+
+/* Let each responsibility heading use the full width of its own button. */
+#groupGrid>button.group-tile>.group-title{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:none!important;
+  align-self:stretch!important;
+  flex:1 1 auto!important;
+  font-size:17px!important;
+  line-height:1.3!important;
+  font-weight:900!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow-wrap:break-word!important;
+  word-break:normal!important;
+  text-wrap:balance!important;
+}
+@media(max-width:620px){
+  #groupGrid>button.group-tile>.group-title{
+    width:100%!important;
+    max-width:none!important;
+    font-size:15px!important;
+    line-height:1.3!important;
+  }
+}
+
+/* FrostTech shared navigation tile standard for central command center and all nested responsibility levels. */
+#groupGrid>.group-tile,.ft-nav-tile{appearance:none;box-sizing:border-box;width:100%;min-width:0;min-height:112px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;white-space:normal;background:#f2f8fd;border:1px solid #dceaf5;border-radius:12px;color:var(--navy);box-shadow:0 1px 3px #102b4e0a;font:inherit;font-weight:900;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+#groupGrid>.group-tile:hover,.ft-nav-tile:hover:not(:disabled),#groupGrid>.group-tile:focus-visible,.ft-nav-tile:focus-visible{background:#e6f2fb;border-color:#9fc7e5;outline:2px solid #9fc7e5;outline-offset:2px}
+.ft-nav-tile:disabled{opacity:.55;cursor:not-allowed}
+.ft-tile-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#e2eff9;font-size:21px;flex:0 0 auto}
+.ft-tile-title,#groupGrid>.group-tile .group-title{display:block;width:100%;min-width:0;max-width:none;font-size:15px;line-height:1.3;font-weight:900;text-align:center;white-space:normal;overflow-wrap:anywhere;word-break:normal;text-wrap:balance}
+#groupItems,#detailGrid,#reservedLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+@media(max-width:620px){#groupItems,#detailGrid,#reservedLinks{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ft-nav-tile{min-height:108px;padding:11px 7px;gap:8px}.ft-tile-icon{width:34px;height:34px;font-size:19px}.ft-tile-title,#groupGrid>.group-tile .group-title{font-size:13px;line-height:1.25}}
+</style></head>
+<body>
+<header><div class="head"><div class="brand"><div class="mark">FT</div><div><h1>FrostTech HVAC and Refrigeration</h1><p>Super Administrator Command Center · Isolated Test Environment</p></div></div><div class="actions"><button id="refresh" class="outline" type="button">Refresh Access</button><button id="signOut" class="light" type="button">Sign Out</button></div></div></header>
+<main>
+<section class="panel welcome" id="home"><div class="eyebrow">Central marketplace authority</div><h2>Super Administrator Command Center</h2><p>Complete oversight of FrostTech's responsibilities. Select one department or reserved responsibility to open its focused workspace. Departmental responsibilities and reserved Super Administrator powers remain separate.</p><div class="statusbar"><span class="pill good" id="identity">Verifying Super Administrator…</span><span class="pill">TEST ONLY</span><span class="pill">Four departments · one central authority</span></div></section>
+<div id="overview">
+<div class="section-head"><div><h3>Super Administrator Responsibility Groups</h3></div></div>
+<section class="grid" id="groupGrid" aria-label="Super Administrator responsibility groups">
+<button class="group-tile" type="button" data-group="operations"><span class="ico" aria-hidden="true">🎧</span><span class="group-title">Operations & Customer<br>Matters</span></button>
+<button class="group-tile" type="button" data-group="supplierCatalogue"><span class="ico" aria-hidden="true">📦</span><span class="group-title">Supplier & Catalogue<br>Management</span></button>
+<button class="group-tile" type="button" data-group="financeTax"><span class="ico" aria-hidden="true">₦</span><span class="group-title">Finance, Payments<br>& Tax</span></button>
+<button class="group-tile" type="button" data-group="advertisersComms"><span class="ico" aria-hidden="true">📣</span><span class="group-title">Advertisers &<br>Communications</span></button>
+<button class="group-tile" type="button" data-group="governance"><span class="ico" aria-hidden="true">👥</span><span class="group-title">People, Roles &<br>Access Governance</span></button>
+<button class="group-tile" type="button" data-group="oversight"><span class="ico" aria-hidden="true">🛡️</span><span class="group-title">Security, Audit &<br>Marketplace Oversight</span></button>
+</section>
+</div>
+<section class="panel detail hidden" id="groupDetail"><div class="eyebrow">Super Administrator responsibility group</div><h3 id="groupTitle">Responsibility group</h3><p id="groupText"></p><div class="detail-grid" id="groupItems"></div><p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="open" id="groupDepartment" type="button">Open related departmental workspace</button><button class="open" id="groupHome" type="button">← Return to Command Center</button></p></section>
+<section class="panel detail hidden" id="departmentDetail"><div class="eyebrow">Focused department workspace</div><h3 id="detailTitle">Department</h3><p id="detailText"></p><div class="detail-grid" id="detailGrid"></div><p style="margin-top:16px"><button class="open" id="backHome" type="button">← Return to Super Administrator Command Center</button></p></section>
+<section class="panel detail hidden" id="responsibilityDetail"><div class="eyebrow">Reserved Super Administrator workspace</div><h3 id="reservedTitle">Responsibility</h3><p id="reservedText"></p><div class="detail-grid" id="reservedLinks"></div><p style="margin-top:16px"><button class="open" id="reservedBackGroup" type="button">← Back to Responsibility Group</button><button class="open" id="reservedBack" type="button">← Return to Super Administrator Command Center</button></p></section>
+</main>
+<footer>FrostTech Administration · Test only. This command center does not change production data, database settings, accounts or permissions.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script>
+<script>
+(function(){
+"use strict";const db=window.supabaseClient,$=id=>document.getElementById(id);
+const deptData={
+ operations:{title:"Operations",text:"Customer requests, standard and direct quotations, orders, deliveries and customer contact workflows.",items:[
+  ["Customer Requests, Orders & Deliveries","Manage authorised customer requests, operational quotations, orders, order items and delivery arrangements.","departmental-admin-test.html",["customer_requests.manage","orders.manage","deliveries.manage","quotations.read_operational"]],
+  ["Standard & Direct Quotations","Prepare and manage independent customer quotations using operational quotation authority.","admin-independent-quotations-test.html",["quotations.read_operational"]]
+ ]},
+ supplier:{title:"Supplier Management",text:"Supplier applications, verification, supplier quotations and supplier account workflows.",items:[
+  ["Supplier Applications & Verification","Review supplier applications. Override of a previous decision remains Super Administrator-only.","supplier-applications-test.html",["supplier_applications.read"]],
+  ["Supplier Quotations","Compare submitted supplier offers, review commercial terms and select or reject supplier quotations.","supplier-quotations-test.html",["supplier_quotes.manage"]]
+ ]},
+ finance:{title:"Finance & Tax",text:"Financial reporting, payments, cost submissions, supplier settlements and tax operations.",items:[
+  ["Financial Reporting & Payments","Review financial summaries, payment records and financial quotation information.","finance-admin-test.html",["financial_reports.read","payments.read","quotations.read_financial","quotations.costs.submit"]],
+  ["Company Bookkeeping","Review FrostTech company journals, expenses, shareholder loans and financial records, separate from marketplace transactions.","bookkeeping-admin-test.html",["bookkeeping.read"]],
+  ["Tax Assessments & Remittances","Manage authorised assessments, remittance evidence, supplier tax profiles and certificates. Tax rules and rates remain reserved.","tax-admin-test.html",["tax.assessments.read","tax.assessments.manage","tax.remittances.manage","tax.supplier_profiles.read","tax.supplier_profiles.manage","tax.certificates.manage","tax.rules.read"]],
+  ["Supplier Settlement Operations","Prepare and submit settlements; execution remains separately permission-gated. Approval/rejection remains Super Administrator-only.","supplier-settlements-admin-test.html",["supplier_settlements.read","supplier_settlements.prepare","supplier_settlements.execute"]]
+ ]},
+ catalogue:{title:"Catalogue & Product Management",text:"Product listings, product information, images, selling prices, stock and catalogue publication.",items:[
+  ["Product Catalogue","Catalogue administration is reserved for the existing Catalogue role. The dedicated test page and RPC integration are not yet ported.",null,["catalogue.manage","products.manage","selling_prices.manage","stock.manage"]],
+  ["Supplier Costs","Supplier costs and internal pricing remain exclusively available to the Super Administrator.",null,[]]
+ ]}
+};
+const groupData={
+ operations:{title:"Operations & Customer Matters",text:"Customer-facing operations, customer oversight, quotations, orders and delivery responsibilities.",department:"operations",items:[["Customer Matters & Account Oversight","Customer accounts, customer requests, customer support and marketplace-wide customer oversight.","customers"],["Standard Quotations & Direct Quotations","Customer-request quotations and independent/direct quotation oversight.","quotations"],["Orders, Fulfilment & Delivery","Order records, delivery scheduling, delivery progress and customer contact records.","operationsOrders"]]},
+ supplierCatalogue:{title:"Supplier & Catalogue Management",text:"Supplier and product responsibilities. Supplier-cost data and protected sourcing remain Super Administrator-only.",department:"supplier",items:[["Supplier Applications, Verification & Accounts","Supplier onboarding, verification, account oversight and protected decision overrides.","supplierApplications"],["Supplier Quotations","Supplier commercial quotations, comparison, review and selection.","supplierQuotes"],["Supplier Costs & Direct-Order Sourcing","Actual supplier costs, internal pricing and direct-order sourcing. Super Administrator only.","supplierCosts"],["Catalogue, Products, Prices & Stock","Product information, images, categories, selling prices, stock and publication.","catalogueProducts"]]},
+ financeTax:{title:"Finance, Payments & Tax",text:"Financial and statutory responsibilities. Preparation permissions remain distinct from reserved Super Administrator approval and configuration powers.",department:"finance",items:[["Financial Oversight & Reporting","Financial summaries, payment records, receipts, fee reconciliation and financial audit.","financialOversight"],["Payments & Reconciliation","Payment verification where authorised, transaction status and reconciliation.","payments"],["Quotation Cost Review & Approval","Review and approve/reject submitted quotation costs. Super Administrator only.","quotationCosts"],["Supplier Settlement Decisions","Approve or reject supplier settlements. This does not itself transfer funds. Super Administrator only.","settlements"],["Tax Assessments & Remittances","Tax assessments, remittance evidence, supplier tax profiles and certificates.","taxAssessments"],["Tax Rules, VAT & Effective Dates","System-wide tax rules, VAT settings, rates and effective dates. Super Administrator only.","tax"]]},
+ advertisersComms:{title:"Advertisers & Communications",text:"Marketplace-wide advertiser and communications responsibilities remain under Super Administrator oversight.",department:null,items:[["Advertiser Accounts, CAC & Campaigns","Advertiser registration, CAC verification, account oversight and paid campaign review.","advertisers"],["Notifications, Email & Recovery","Notification oversight, email delivery logs and controlled recovery.","communications"]]},
+ governance:{title:"People, Roles & Access Governance",text:"The Super Administrator alone appoints administrators and operators, assigns departments and governs access.",department:null,items:[["Employee Registration & Onboarding","Employee records and onboarding workflow.","employee"],["Administrator & Operator Appointments","Departmental administrator appointments, operator assignments, suspension and reactivation.","operators"],["Roles, Permissions & Department Access","System role governance, permission assignments and access boundaries. Super Administrator only.","operators"],["Security & Access Controls","System-wide security controls and protected access oversight.","operators"]]},
+ oversight:{title:"Security, Audit & Marketplace Oversight",text:"Central oversight across FrostTech, including accountability, reserved decisions and consolidated performance.",department:null,items:[["Administrative Activity & Print Audit","Administrative activity history, sensitive print authorisations and accountability.","audit"],["Marketplace Summary & Performance","Consolidated products, requests, suppliers, quotations, payments and departmental performance.","marketplace"],["System-wide Reserved Decisions","Super Administrator-only decisions and overrides.","settlements"]]}
+};
+const reserved={
+ customers:{title:"Customer Matters & Account Oversight",text:"The Super Administrator retains marketplace-wide oversight of customer accounts, requests, quotations, orders and customer-related administration.",items:[["Customer Requests & Order Oversight","Open the protected Operations workspace for customer requests, quotations, orders and delivery oversight.","departmental-admin-test.html"],["Customer Account Administration","A dedicated customer-account management workspace is not yet ported into this test branch. The responsibility remains reserved for central oversight.",null]]},
+ quotations:{title:"Standard Quotations & Direct Quotations",text:"The Super Administrator retains oversight of all standard customer-request quotations and independent/direct quotations.",items:[["Customer-Request Quotations","Open the protected Operations workspace for customer requests and their quotation lifecycle.","departmental-admin-test.html"],["Independent / Direct Quotations","Prepare or review independent quotations through the existing protected test workflow.","admin-independent-quotations-test.html"]]},
+ employee:{title:"Employee, Administrator & Operator Appointments",text:"Super Administrator-only employee onboarding, departmental administrator appointments, operator assignments and access lifecycle.",items:[["Employee Registration & Onboarding","Create and manage employee onboarding records.","employee-management-test.html"],["Department & Operator Management","Review department assignments, appointment hold and administrator access.","department-operator-management-test.html"]]},
+ operators:{title:"System Security, Roles & Permissions",text:"Super Administrator-only role governance, department access and administrator/operator appointment controls.",items:[["Department & Operator Management","Manage appointments and assignments under the existing launch hold.","department-operator-management-test.html"],["Administrator Activity Log","Review administrative activity and access changes.","admin-management-test.html"]]},
+ audit:{title:"Audit, Print Records & Accountability",text:"Super Administrator-only administrative activity and audit oversight.",items:[["Administrator Activity Log","Open the protected activity audit workspace.","admin-management-test.html"]]},
+ tax:{title:"Tax Rules, VAT & Effective Dates",text:"Only the Super Administrator may configure or activate system-wide tax rules, VAT settings, tax rates and effective dates.",items:[["Tax Rules & Rates","Open the tax workspace; server-side controls remain Super Administrator-only.","tax-admin-test.html#rules"],["Assessments & Remittances","Review the tax operational workspace.","tax-admin-test.html#assessments"]]},
+ settlements:{title:"Supplier Settlement Approval & Rejection",text:"Approval and rejection of submitted supplier settlements remain exclusively with the Super Administrator. Approval is not a payment or disbursement.",items:[["Supplier Settlement Review","Review submitted settlements and record the protected approval or rejection decision.","supplier-settlements-admin-test.html"]]},
+ supplierApplications:{title:"Supplier Applications, Verification & Accounts",text:"Supplier onboarding, verification, account oversight and Super Administrator override authority.",items:[["Supplier Applications & Verification","Review supplier applications using the protected workspace.","supplier-applications-test.html"],["Supplier Account Maintenance","Review approved supplier accounts, suspend or reactivate with mandatory reasons, and inspect permanent status audit history.", "supplier-account-maintenance-test.html"]]},
+ supplierQuotes:{title:"Supplier Quotations",text:"Supplier commercial quotations, comparison, review and selection. Dedicated test integration is pending.",items:[["Supplier Quotation Review & Selection","Open the protected quotation review workspace. Supplier Administrators can make decisions; Super Administrator view is read-only.","supplier-quotations-test.html"]]},
+ supplierCosts:{title:"Supplier Costs & Direct-Order Sourcing",text:"Supplier costs, internal pricing and direct-order supplier sourcing are exclusively reserved for the Super Administrator. The direct-order workspace uses Super Administrator-only database procedures and preserves sourcing audit history.",items:[["Supplier Cost Records","Catalogue supplier-cost records remain pending until their protected test RPCs and product dependencies are ported and verified.",null],["Direct-Order Sourcing","Assign approved suppliers to paid direct-order items, record actual unit costs and review sourcing audit history.", "direct-order-sourcing-test.html"]]},
+ catalogueProducts:{title:"Catalogue, Products, Prices & Stock",text:"Catalogue management; do not enable writes until dedicated test RPC integration is reviewed.",items:[["Product Catalogue","Product listings, images, categories, selling prices, stock and publication.",null]]},
+ financialOversight:{title:"Financial Oversight & Reporting",text:"Marketplace-wide financial visibility, records, fee reconciliation and reporting.",items:[["Financial Reporting & Records","Open the protected finance workspace.","finance-admin-test.html"]]},
+ payments:{title:"Payments & Reconciliation",text:"Payment records, verification and reconciliation under existing permissions.",items:[["Payment Records & Reconciliation","Open the protected finance workspace.","finance-admin-test.html"]]},
+ quotationCosts:{title:"Quotation Cost Review & Approval",text:"Finance may submit costs under its permission. Approval/rejection remains Super Administrator-only.",items:[["Quotation Cost Decisions","Protected Super Administrator cost review integration is pending.",null]]},
+ taxAssessments:{title:"Tax Assessments & Remittances",text:"Operational tax assessments, remittances, supplier tax profiles and certificates.",items:[["Tax Operations","Open the protected tax workspace.","tax-admin-test.html"]]},
+ advertisers:{title:"Advertiser Accounts, CAC & Campaigns",text:"Advertiser registration, CAC verification, account oversight and paid campaign decisions remain Super Administrator responsibilities.",items:[["Advertiser Review & CAC Verification","Complete advertiser review workflow is not yet ported into the isolated test project.",null]]},
+ communications:{title:"Notifications, Email & Recovery",text:"Notification oversight, email delivery logs and controlled recovery remain Super Administrator responsibilities.",items:[["Notification Centre & Delivery Logs","Complete central notification recovery workflow is not yet ported into the isolated test project.",null]]},
+ operationsOrders:{title:"Orders, Fulfilment & Delivery",text:"Customer orders, order items, delivery scheduling, progress and customer contact records.",items:[["Customer Requests, Orders & Deliveries","Open the protected Operations workspace.","departmental-admin-test.html"]]},
+ marketplace:{title:"Marketplace Summary & Performance",text:"Consolidated oversight of products, requests, suppliers, quotations, payments and departmental performance.",items:[["Consolidated Marketplace Reports","Central reporting integration is pending; no unverified figures are displayed.",null]]}
+};
+let currentDepartment=null,currentGroup=null;
+function hideAll(){ $("overview").classList.add("hidden");$("groupDetail").classList.add("hidden");$("departmentDetail").classList.add("hidden");$("responsibilityDetail").classList.add("hidden");}
+function home(){hideAll();$("overview").classList.remove("hidden");currentGroup=null;}
+function tileIcon(title){if(/customer|order|deliver/i.test(title))return "🎧";if(/quotation/i.test(title))return "🧾";if(/supplier/i.test(title))return "📦";if(/financial|payment|settlement/i.test(title))return "₦";if(/tax|remittance|certificate/i.test(title))return "🧮";if(/product|catalogue/i.test(title))return "🧊";if(/employee|administrator|operator|role|permission/i.test(title))return "👥";if(/advertis|campaign|cac/i.test(title))return "📣";if(/notification|email|communication/i.test(title))return "✉️";return "🛡️";}
+function makeNavTile(title,action,disabled=false,label=""){const b=document.createElement("button");b.type="button";b.className="ft-nav-tile";const i=document.createElement("span");i.className="ft-tile-icon";i.setAttribute("aria-hidden","true");i.textContent=tileIcon(title);const t=document.createElement("span");t.className="ft-tile-title";t.textContent=title;b.append(i,t);b.disabled=disabled;if(label)b.title=label;if(action&&!disabled)b.addEventListener("click",action);return b;}
+function showGroup(key){const g=groupData[key];if(!g)return;currentGroup=key;hideAll();$("groupDetail").classList.remove("hidden");$("groupTitle").textContent=g.title;$("groupText").textContent=g.text;const root=$("groupItems");root.replaceChildren();g.items.forEach(item=>root.append(makeNavTile(item[0],()=>showReserved(item[2]))));const dept=$("groupDepartment");dept.classList.toggle("hidden",!g.department);if(g.department){dept.textContent="Open related departmental workspace";dept.onclick=()=>location.href="department-command-center-test.html?department="+encodeURIComponent(g.department);}}
+async function permitted(list){if(!list.length)return true;const results=await Promise.all(list.map(async p=>{const {data,error}=await db.rpc("admin_has_permission",{required_permission:p});if(error)throw error;return data===true;}));return results.some(Boolean);}
+function renderCards(root,items){root.replaceChildren();items.forEach(async item=>{const allowed=await permitted(item[3]||[]);const pending=!item[2];const tile=makeNavTile(item[0],()=>{location.href=item[2];},!allowed||pending,!allowed?"Permission not assigned":"Test workspace integration pending · responsibility retained");root.append(tile);});}
+function showDepartment(key){const d=deptData[key];if(!d)return;currentDepartment=key;hideAll();$("departmentDetail").classList.remove("hidden");$("detailTitle").textContent=d.title;$("detailText").textContent=d.text;renderCards($("detailGrid"),d.items);}
+function showReserved(key){const d=reserved[key];if(!d)return;hideAll();$("reservedBackGroup").classList.toggle("hidden",!currentGroup);$("responsibilityDetail").classList.remove("hidden");$("reservedTitle").textContent=d.title;$("reservedText").textContent=d.text;const root=$("reservedLinks");root.replaceChildren();d.items.forEach(item=>root.append(makeNavTile(item[0],item[2]?()=>{location.href=item[2];}:null,!item[2],item[2]?"":"Test workspace integration pending · responsibility retained")));}
+async function start(){if(!db?.auth)throw new Error("Test authentication service did not load.");const {data:{session},error}=await db.auth.getSession();if(error)throw error;if(!session?.user){location.replace("test-admin-login.html?access=super");return;}const {data:role,error:re}=await db.rpc("admin_get_my_role");if(re)throw re;if(role!=="super_admin"){location.replace("department-command-center-test.html");return;}const {data:profile,error:pe}=await db.from("profiles").select("is_active").eq("id",session.user.id).maybeSingle();if(pe)throw pe;if(!profile||profile.is_active!==true)throw new Error("The Super Administrator profile is inactive.");$("identity").textContent="Signed in: "+(session.user.email||"Super Administrator");}
+document.querySelectorAll("[data-department]").forEach(b=>b.addEventListener("click",()=>{const key=b.dataset.department;location.href="department-command-center-test.html?department="+encodeURIComponent(key);}));
+document.querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>showReserved(b.dataset.open)));
+$("backHome").addEventListener("click",home);$("groupHome").addEventListener("click",home);$("reservedBack").addEventListener("click",home);$("reservedBackGroup").addEventListener("click",()=>{if(currentGroup)showGroup(currentGroup);else home();});document.querySelectorAll("[data-group]").forEach(b=>b.addEventListener("click",()=>showGroup(b.dataset.group)));
+const refreshButton=$("refresh");
+refreshButton.addEventListener("click",async()=>{
+ if(refreshButton.disabled)return;
+ refreshButton.disabled=true;
+ refreshButton.textContent="Refreshing…";
+ refreshButton.setAttribute("aria-busy","true");
+ $("identity").textContent="Rechecking Super Administrator access…";
+ try{
+  await start();
+ }catch(e){
+  $("identity").textContent="Access check failed: "+(e.message||"Please try again.");
+ }finally{
+  refreshButton.disabled=false;
+  refreshButton.textContent="Refresh Access";
+  refreshButton.removeAttribute("aria-busy");
+ }
+});
+$("signOut").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){$("identity").textContent=error.message;return;}location.replace("administration-portal-test.html");});
+start().catch(e=>{hideAll();$("home").classList.remove("hidden");$("home").querySelector("h2").textContent="Super Administrator access required";$("home").querySelector("p").textContent=e.message||"Access verification failed.";});
+})();
+</script></body></html>

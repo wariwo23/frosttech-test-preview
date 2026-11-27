@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Supplier Quotations | FrostTech TEST</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f7fb;color:#172b40;font:15px/1.5 Arial,sans-serif}
+header{background:linear-gradient(115deg,#062746,#0b4778);color:#fff;padding:18px 16px;border-bottom:4px solid #55b9ed}
+.head,main{max-width:1120px;margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0}.sub{font-size:12px;color:#d8eafa;margin:3px 0 0}
+main{padding:18px 12px 36px}.panel,.quote{background:#fff;border:1px solid #dce7f0;border-radius:12px;padding:16px;margin:12px 0}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar button{width:auto}
+button{border:0;border-radius:8px;padding:11px 14px;font:700 13px Arial;cursor:pointer;background:#0b4778;color:#fff}
+button.secondary{background:#e8eef4;color:#18344f}button.danger{background:#a51d2d}button:disabled{opacity:.55;cursor:not-allowed}
+.message{padding:11px;border-radius:8px;background:#eaf4fc;color:#124d78;overflow-wrap:anywhere}.error{background:#ffeded;color:#991b1b}.success{background:#eaf7ee;color:#176534}
+.muted{color:#63778a;font-size:13px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.field{padding:9px;background:#f5f8fb;border-radius:8px;overflow-wrap:anywhere}.field strong{display:block;font-size:12px;color:#617386}
+h2{font-size:18px;color:#063b70;margin:0 0 7px}.quote h3{font-size:16px;margin:0 0 9px}.status{display:inline-block;padding:5px 9px;border-radius:20px;background:#edf3f8;font-size:12px;font-weight:bold}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{flex:1;min-width:135px}
+footer{max-width:1120px;margin:auto;padding:0 12px 24px;color:#617386;font-size:12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}main{padding:12px 9px 28px}.panel,.quote{padding:12px}.actions button{width:100%}}
+
+.ft-backdrop{position:fixed;inset:0;background:rgba(4,20,38,.68);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+.ft-backdrop.open{display:flex}.ft-modal{width:min(100%,440px);background:#fff;border-radius:13px;padding:22px;box-shadow:0 18px 55px #0005}
+.ft-modal h2{margin:0 0 8px}.ft-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:18px}.ft-actions button{width:auto}
+</style></head>
+<body>
+<header><div class="head"><div><h1>FrostTech HVAC and Refrigeration</h1><p class="sub">Supplier Quotations — Isolated Test Workspace</p></div><div class="toolbar"><button id="refresh" type="button">Refresh</button><button id="back" class="secondary" type="button">Back to Command Center</button><button id="logout" class="secondary" type="button">Sign Out</button></div></div></header>
+<main>
+<section class="panel"><h2>Supplier quotation oversight</h2><p class="muted">This workspace is restricted to the Super Administrator during the authorization transition. Departmental Supplier & Catalogue administrators will receive a separate non-financial review workflow after its server-side data contract is verified. Supplier prices, totals, delivery costs and final supplier selection are not exposed through the departmental interface.</p><p id="message" class="message" role="status">Verifying administrator access…</p><p><span id="role" class="status">Checking role</span> <span class="status">TEST ONLY</span></p></section>
+<section id="quotes" aria-live="polite"></section>
+</main>
+
+<div id="confirmModal" class="ft-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+ <div class="ft-modal"><h2 id="confirmTitle">Confirm quotation decision</h2><p id="confirmText"></p>
+ <div class="ft-actions"><button id="confirmCancel" class="secondary" type="button">Cancel</button><button id="confirmYes" type="button">Continue</button></div></div>
+</div>
+<footer>Isolated test environment only. This page does not create supplier accounts, change permissions, alter customer prices, or initiate payments.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-test.js"></script>
+<script>
+(function(){
+"use strict";
+const db=window.supabaseClient,$=id=>document.getElementById(id);
+let currentRole=null,canManage=false,loading=false;
+function msg(t,k=""){const n=$("message");n.textContent=t;n.className="message "+k;}
+function node(tag,cls,txt){const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=txt;return n;}
+function field(root,label,value){const n=node("div","field");n.append(node("strong","",label),document.createTextNode(value===null||value===undefined||value===""?"—":String(value)));root.append(n);}
+
+function ftConfirm(message,title,yesLabel="Continue"){
+ return new Promise(resolve=>{
+  const modal=$("confirmModal"),yes=$("confirmYes"),cancel=$("confirmCancel");
+  $("confirmTitle").textContent=title;$("confirmText").textContent=message;yes.textContent=yesLabel;
+  const close=value=>{modal.classList.remove("open");yes.removeEventListener("click",onYes);cancel.removeEventListener("click",onCancel);modal.removeEventListener("click",onBackdrop);document.removeEventListener("keydown",onKey);resolve(value);};
+  const onYes=()=>close(true),onCancel=()=>close(false),onBackdrop=e=>{if(e.target===modal)close(false);},onKey=e=>{if(e.key==="Escape")close(false);};
+  yes.addEventListener("click",onYes);cancel.addEventListener("click",onCancel);modal.addEventListener("click",onBackdrop);document.addEventListener("keydown",onKey);modal.classList.add("open");cancel.focus();
+ });
+}
+function money(v){return "₦"+Number(v||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function render(rows){
+ const root=$("quotes");root.replaceChildren();
+ if(!rows.length){root.append(node("p","panel muted","No supplier quotations are currently recorded. The workspace is connected; it will display submitted quotations when suppliers submit them."));return;}
+ rows.forEach(q=>{
+  const card=node("article","quote");
+  const heading=node("div","toolbar");heading.append(node("h3","",q.request_number||"Supplier quotation"));heading.append(node("span","status",String(q.status||"").toUpperCase()));card.append(heading);
+  const grid=node("div","grid");
+  field(grid,"Customer request",q.request_title);field(grid,"Supplier",q.supplier_name);
+  field(grid,"Product",q.product_name);field(grid,"Quantity",q.quantity);
+  field(grid,"Supplier unit price",money(q.supplier_unit_price));field(grid,"Supplier total",money(q.supplier_total));
+  field(grid,"Delivery cost",money(q.delivery_cost));field(grid,"Valid until",q.valid_until?new Date(q.valid_until).toLocaleString():"Not specified");
+  field(grid,"Submitted",q.created_at?new Date(q.created_at).toLocaleString():"—");field(grid,"Supplier notes",q.notes);
+  card.append(grid);
+  if(canManage&&q.status==="submitted"){
+   const actions=node("div","actions");
+   const select=node("button","","Select this quotation");
+   const reject=node("button","danger","Reject quotation");
+   select.addEventListener("click",()=>decide(q.id,"select",select, reject));
+   reject.addEventListener("click",()=>decide(q.id,"reject",reject, select));
+   actions.append(select,reject);card.append(actions);
+  }
+  root.append(card);
+ });
+}
+async function decide(id,action,button,other){
+ if(loading)return;
+ const question=action==="select"?"Select this supplier quotation? Other submitted quotations for this same customer request will be rejected.":"Reject this supplier quotation?";
+ if(!(await ftConfirm(question,action==="select"?"Select Supplier Quotation":"Reject Supplier Quotation",action==="select"?"Yes, Select Quotation":"Yes, Reject Quotation")))return;
+ loading=true;button.disabled=true;other.disabled=true;button.textContent="Saving…";
+ try{
+  const fn=action==="select"?"admin_select_supplier_quote":"admin_reject_supplier_quote";
+  const {data,error}=await db.rpc(fn,{p_quote_id:id});
+  if(error)throw error;
+  if(!data||data.success!==true)throw new Error("The database did not confirm the decision. Refresh and check the current quotation status.");
+  msg(action==="select"?"Quotation selected. Other submitted offers for this request were handled and the action was audited.":"Quotation rejected and the action was audited.","success");
+  await load(true);
+ }catch(e){msg(e.message||"The quotation decision could not be saved.","error");button.disabled=false;other.disabled=false;button.textContent=action==="select"?"Select this quotation":"Reject quotation";}
+ finally{loading=false;}
+}
+async function load(preserve=false){
+ if(loading)return;
+ $("quotes").replaceChildren(node("p","panel muted","Loading supplier quotations…"));
+ try{
+  const {data,error}=await db.rpc("admin_list_supplier_quotes");
+  if(error)throw error;
+  render(Array.isArray(data)?data:[]);
+  if(!preserve)msg("Supplier quotation records loaded successfully.","success");
+ }catch(e){$("quotes").replaceChildren();msg(e.message||"Supplier quotations could not be loaded.","error");}
+}
+async function init(){
+ if(!db?.auth){msg("The test database client did not load.","error");return;}
+ const {data,error}=await db.auth.getSession();
+ if(error||!data.session){location.href="test-admin-login.html?return="+encodeURIComponent("supplier-quotations-test.html");return;}
+ try{
+  const {data:role,error:roleError}=await db.rpc("admin_get_my_role");
+  if(roleError)throw roleError;
+  if(role!=="super_admin"){
+   $("role").textContent=role?role.replaceAll("_"," ").toUpperCase():"ROLE NOT VERIFIED";
+   const detail=role==="operations_admin"?"Your current session is signed in as Operations Administrator. Sign out and sign in through the Super Administrator portal.":role==="finance_admin"?"Your current session is signed in as Finance Administrator. Sign out and sign in through the Super Administrator portal.":role==="catalogue_admin"?"Your current session is signed in as Catalogue Administrator. Sign out and sign in through the Super Administrator portal.":role?"This account does not have a permitted role for this workspace.":"The current session did not return an authorised administrator role. Sign out and sign in again through the Super Administrator portal.";
+   msg("Access denied. Supplier quotation costs and final selection are reserved for the Super Administrator. "+detail,"error");return;
+  }
+  currentRole=role;
+  const {data:allowed,error:permissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_quotes.manage"});
+  if(permissionError)throw permissionError;
+  canManage=role==="supplier_admin"&&allowed===true;
+  $("role").textContent=role.replaceAll("_"," ").toUpperCase()+(role==="super_admin"?" · READ ONLY":"");
+  if(role==="super_admin")msg("Super Administrator oversight mode. Quotation decisions are disabled in this view.","success");
+  await load(true);
+ }catch(e){msg(e.message||"Administrator access could not be verified.","error");}
+}
+$("refresh").addEventListener("click",()=>load());
+$("back").addEventListener("click",()=>{location.href=currentRole==="super_admin"?"super-admin-command-center-test.html":"department-command-center-test.html";});
+$("logout").addEventListener("click",async()=>{const {error}=await db.auth.signOut({scope:"local"});if(error){msg(error.message,"error");return;}location.href="test-admin-login.html";});
+init();
+})();
+</script></body></html>

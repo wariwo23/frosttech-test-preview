@@ -69,35 +69,11 @@ select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7
 <body>
 <header><h1>FrostTech HVAC and Refrigeration</h1><p>Supplier Applications Review</p><div class="env">ISOLATED TEST ENVIRONMENT — NOT PRODUCTION</div></header>
 <main>
-<section class="panel top"><div><strong id="adminRole">Checking administrator access…</strong><div class="meta" id="adminEmail"></div></div><div class="actions" style="margin:0"><button class="secondary" id="refreshButton">Refresh</button><button class="secondary" id="signOutButton">Sign Out</button></div></section>
+<section class="panel top"><div><strong id="adminRole">Checking administrator access…</strong><div class="meta" id="adminEmail"></div></div><div class="actions" style="margin:0"><a class="secondary" href="department-command-center-test.html?department=supplier" style="display:inline-flex;align-items:center;text-decoration:none;padding:11px 15px;border-radius:7px;font-weight:bold">← Return to Supplier Management</a><button class="secondary" id="refreshButton">Refresh</button><button class="secondary" id="signOutButton">Sign Out</button></div></section>
 <div id="message" role="status" aria-live="polite"></div>
-<section id="historicalDecisions" class="panel" aria-live="polite">
-<div class="top"><div><h2 style="margin:0 0 5px">Recovered Historical Decisions</h2><div class="muted">Two earlier approvals recovered from the isolated test environment audit log. Each supplier record can be printed separately for individual filing.</div></div></div>
-<article id="historicalRecord001" class="historical-card">
-<div class="top"><div><h3>Frosttech test supplier 5</h3><div class="muted">Recovered Historical Approval Record 001</div></div><span class="historical-label">APPROVED — HISTORICAL</span></div>
-<div class="details">
-<div><strong>Contact person</strong>Blessing</div><div><strong>Business email</strong>unajite@gmail.com</div>
-<div><strong>Phone number</strong>08160594013</div><div><strong>Business address</strong>Airtel Office, Asaba, Delta State</div>
-<div><strong>Decision</strong>Approved</div><div><strong>Decision date and time</strong>22 November 2026, 2:13 pm (Nigeria time)</div>
-<div><strong>Reviewer</strong>Test Super Administrator</div><div><strong>Override</strong>No</div>
-<div><strong>Decision reason</strong>Not recorded in the recovered audit entry</div>
-</div>
-<div class="historical-evidence">Evidence source: isolated test environment admin activity log, entry #7. The audit entry and supplier reviewed_at timestamp agree. No permanent decision reference code was present in the source.</div>
-<div class="actions no-print"><button type="button" class="primary" data-print-historical="historicalRecord001">Print / Save this supplier record (A4)</button></div>
-</article>
-<article id="historicalRecord002" class="historical-card">
-<div class="top"><div><h3>Frosttech test supplier 3</h3><div class="muted">Recovered Historical Approval Record 002</div></div><span class="historical-label">APPROVED — HISTORICAL</span></div>
-<div class="details">
-<div><strong>Contact person</strong>Bond</div><div><strong>Business email</strong>omonode.dele+redirecttest@gmail.com</div>
-<div><strong>Phone number</strong>08080522498</div><div><strong>Business address</strong>Mtn office, Asaba, Delta State</div>
-<div><strong>Decision</strong>Approved</div><div><strong>Decision date and time</strong>22 November 2026, 2:18 pm (Nigeria time)</div>
-<div><strong>Reviewer</strong>Test Super Administrator</div><div><strong>Override</strong>No</div>
-<div><strong>Decision reason</strong>Not recorded in the recovered audit entry</div>
-</div>
-<div class="historical-evidence">Evidence source: isolated test environment admin activity log, entry #8. The audit entry and supplier reviewed_at timestamp agree. No permanent decision reference code was present in the source.</div>
-<div class="actions no-print"><button type="button" class="primary" data-print-historical="historicalRecord002">Print / Save this supplier record (A4)</button></div>
-</article>
-<p class="muted">These recovered summaries do not create or alter supplier records, do not send emails, and do not claim to be new permanent decision records.</p>
+<section id="historicalDecisions" class="panel hidden" aria-live="polite">
+<div class="top"><div><h2 style="margin:0 0 5px">Recovered Historical Decisions</h2><div class="muted">Recovered approval summaries are loaded only after administrator authentication and supplier-read permission have been verified.</div></div></div>
+<div id="historicalDecisionList"><p class="muted">Loading protected historical records…</p></div>
 </section>
 <section id="decisionSummary" class="panel decision-summary" aria-live="polite">
 <div class="record-head">
@@ -134,25 +110,24 @@ const db=window.supabaseClient;
 const msg=document.getElementById("message");
 const list=document.getElementById("applicationList");
 const filter=document.getElementById("statusFilter");
-let currentRole=null;
+let currentRole=null,canReviewApplications=false;
 function showMessage(t,type){msg.textContent=t;msg.className=type;msg.style.display="block"}
 function clearMessage(){msg.textContent="";msg.className="";msg.style.display="none"}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function fmt(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?esc(v):d.toLocaleString()}
 async function verifyAdmin(user){
  if(!user)return null;
- const {data:profile,error:pe}=await db.from("profiles").select("id,role,is_active").eq("id",user.id).maybeSingle();
- if(pe)throw pe;
- if(!profile||profile.role!=="admin"||profile.is_active!==true)return null;
- const {data:role,error:re}=await db.rpc("admin_get_my_role");
- if(re)throw re;
+ // Central authorisation validates the active profile and permanent or
+ // isolated-test administrator grant; profiles.role is not the permission source.
+ const {data:role,error}=await db.rpc("admin_get_my_role");
+ if(error)throw error;
  return ["super_admin","supplier_admin"].includes(role)?role:null;
 }
 function render(rows){
  if(!rows||!rows.length){list.innerHTML='<p class="muted">No supplier applications found for this filter.</p>';return}
  list.innerHTML=rows.map(s=>{
   const status=String(s.review_status||"pending").toLowerCase();
-  const canReview=status==="pending";
+  const canReview=canReviewApplications&&status==="pending";
   const canOverride=currentRole==="super_admin"&&status!=="pending";
   const actions=(canReview||canOverride)?'<div class="reason"><label for="reason-'+esc(s.supplier_id)+'">'+(canOverride?"Override reason (required)":"Rejection reason (required)")+'</label><textarea id="reason-'+esc(s.supplier_id)+'" rows="2" placeholder="Enter a clear reason if rejecting'+(canOverride?" or overriding":"")+'"></textarea></div><div class="actions">'+(canReview?'<button class="primary" data-decision="approved" data-id="'+esc(s.supplier_id)+'">Approve supplier</button>':'')+'<button class="danger" data-decision="rejected" data-id="'+esc(s.supplier_id)+'" data-override="'+(canOverride?"true":"false")+'">'+(canOverride?"Override: Reject":"Reject application")+'</button>'+(canOverride?'<button class="primary" data-decision="approved" data-id="'+esc(s.supplier_id)+'" data-override="true">Override: Approve</button>':'')+'</div>':'';
   return '<article class="application"><div class="top"><div><h3>'+esc(s.business_name)+'</h3><div class="meta">Application submitted: '+fmt(s.application_created_at)+'</div></div><span class="status '+esc(status)+'">'+esc(status.toUpperCase())+'</span></div><div class="details"><div><strong>Contact person</strong>'+esc(s.contact_name)+'</div><div><strong>Business email</strong>'+esc(s.email)+'</div><div><strong>Phone</strong>'+esc(s.phone)+'</div><div><strong>Location</strong>'+esc([s.address,s.city,s.state].filter(Boolean).join(", "))+'</div><div><strong>Email verified</strong>'+ (s.email_verified?"Yes":"No — approval blocked")+'</div><div><strong>Profile active</strong>'+(s.profile_active?"Yes":"No")+'</div><div><strong>Last reviewed</strong>'+fmt(s.reviewed_at)+'</div><div><strong>Review reason</strong>'+esc(s.review_reason||"—")+'</div></div>'+(s.reviewed_by?'<div class="meta">Reviewed by administrator ID: '+esc(s.reviewed_by)+'</div>':'')+actions+'</article>';
@@ -213,6 +188,40 @@ function renderDecisionSummary(result,emailResult){
   summary.querySelector(".actions.no-print").appendChild(retry);
  }
  summary.scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function loadRecoveredHistoricalDecisions(){
+ const section=document.getElementById("historicalDecisions");
+ const target=document.getElementById("historicalDecisionList");
+ section.classList.add("hidden");
+ target.innerHTML='<p class="muted">Loading protected historical records…</p>';
+ const {data,error}=await db.rpc("admin_list_recovered_supplier_approvals");
+ if(error){target.innerHTML="";showMessage("Recovered historical supplier records could not be loaded: "+(error.message||"Access denied."),"error");return}
+ if(!Array.isArray(data)||!data.length){target.innerHTML='<p class="muted">No recovered historical approval records are available.</p>';return}
+ target.innerHTML=data.map((r,index)=>{
+  const decisionAt=fmt(r.decision_at);
+  const address=[r.address,r.city,r.state].filter(Boolean).join(", ");
+  const fields=[
+   ["Contact person",r.contact_name],
+   ["Business email",r.email],
+   ["Phone number",r.phone],
+   ["Business address",address],
+   ["Decision",r.decision],
+   ["Decision date and time",decisionAt],
+   ["Reviewer",r.reviewer_name],
+   ["Override",r.override_used?"Yes":"No"],
+   ["Decision reason",r.decision_reason||"Not recorded in recovered audit entry"]
+  ];
+  const id="recoveredSupplierRecord"+String(r.activity_entry_id);
+  return '<article id="'+esc(id)+'" class="historical-card"><div class="top"><div><h3>'+esc(r.business_name)+'</h3><div class="muted">Recovered Historical Approval Record '+String(index+1).padStart(3,"0")+'</div></div><span class="historical-label">APPROVED — HISTORICAL</span></div><div class="details">'+fields.map(([label,value])=>'<div><strong>'+esc(label)+'</strong>'+esc(value??"—")+'</div>').join("")+'</div><div class="historical-evidence">Evidence source: isolated test environment administrator activity log, entry #'+esc(r.activity_entry_id)+'. This is a recovered historical summary, not a newly created decision record.</div><div class="actions no-print"><button type="button" class="primary" data-print-historical="'+esc(id)+'">Print / Save this supplier record (A4)</button></div></article>';
+ }).join("");
+ section.classList.remove("hidden");
+ target.querySelectorAll("[data-print-historical]").forEach(button=>button.addEventListener("click",()=>{
+  const record=document.getElementById(button.dataset.printHistorical);if(!record)return;
+  document.querySelectorAll(".historical-card").forEach(card=>card.classList.remove("print-target"));
+  record.classList.add("print-target");document.body.classList.add("print-historical");
+  const cleanup=()=>{document.body.classList.remove("print-historical");record.classList.remove("print-target")};
+  window.addEventListener("afterprint",cleanup,{once:true});window.print();setTimeout(cleanup,2000);
+ }));
 }
 async function loadApplications(preserveMessage=false){
  if(!preserveMessage)clearMessage();list.innerHTML='<p class="muted">Loading applications…</p>';
@@ -304,6 +313,9 @@ async function init(){
  try{
   currentRole=await verifyAdmin(data.session.user);
   if(!currentRole){await db.auth.signOut({scope:"local"});location.href="test-admin-login.html?return="+encodeURIComponent("supplier-applications-test.html");return}
+  const {data:reviewAllowed,error:reviewPermissionError}=await db.rpc("admin_has_permission",{required_permission:"supplier_applications.review"});
+  if(reviewPermissionError)throw reviewPermissionError;
+  canReviewApplications=reviewAllowed===true;
   document.getElementById("adminRole").textContent=currentRole.replaceAll("_"," ").toUpperCase();
   const emailPanel=document.getElementById("emailTestPanel");
   const emailTestButton=document.getElementById("sendEmailTestButton");
@@ -318,6 +330,7 @@ async function init(){
    emailPanel.classList.add("hidden");
   }
   document.getElementById("adminEmail").textContent=data.session.user.email||"";
+  await loadRecoveredHistoricalDecisions();
   await loadApplications();
  }catch(e){document.getElementById("emailTestPanel").classList.add("hidden");showMessage(e.message||"Administrator access could not be verified.","error")}
 }
