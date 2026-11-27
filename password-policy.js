@@ -39,8 +39,9 @@
     passwordInput.setCustomValidity(message && password.length > 0 ? message : "");
     if (confirmInput) confirmInput.setCustomValidity(showErrors && confirmInput.value && password !== confirmInput.value ? "The passwords do not match." : "");
     if (status) {
-      status.textContent = message || (password.length === 0 ? "Password guidance: 12 or more characters, up to 72 UTF-8 bytes. Spaces and passphrases are allowed." : "Password length looks good. Avoid reusing a password from another service.");
+      status.textContent = message || (password.length === 0 ? "" : "Password length looks good. Avoid reusing a password from another service.");
       status.style.color = message ? "#a11919" : "#526579";
+      status.hidden = !message && password.length === 0;
     }
     return !message;
   }
