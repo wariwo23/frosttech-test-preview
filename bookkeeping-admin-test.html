@@ -24,7 +24,7 @@
 <section class="card"><h2>Super Administrator Review &amp; Posting</h2><p class="muted">Approval and posting are separate actions. Only posted journals enter official ledger reports.</p><div id="approvalAccess" class="message">Checking access…</div><div id="approvalQueue"></div><div id="confirmPanel" class="card hidden"><strong id="confirmText">Confirm action</strong><p class="toolbar"><button id="confirmYes" type="button">Confirm</button><button id="confirmNo" type="button" class="secondary">Cancel</button></p></div></section><section class="card" id="financialReports"><h2>Financial Reports</h2><p class="muted">Reports are calculated exclusively from posted journal entries. Draft, submitted, approved-but-unposted and rejected entries are excluded.</p><p><label>Reporting period <select id="reportPeriod" class="field"></select></label> <button id="runReports" type="button">Refresh Reports</button></p><div id="reportNotice" class="message">Reports have not yet been calculated.</div><h3>Trial Balance</h3><div id="trialBalance"></div><h3>Profit &amp; Loss</h3><div id="profitLoss"></div><h3>Balance Sheet</h3><div id="balanceSheet"></div><h3>Bank Cash Movement</h3><div id="cashFlow"></div></section><section class="card"><h2>Chart of Accounts</h2><div id="accounts"></div></section>
 <section class="card"><h2>Journal Register</h2><div id="journals"></div></section>
 <section class="card"><h2>Expense Register</h2><div id="expenses"></div></section>
-<section class="card"><h2>Shareholder Loan Register</h2><div id="loans"></div></section>
+<section class="card"><h2>Shareholder Loan Register</h2><div id="loans"></div></section>\n<section class="card" id="auditSection"><h2>Bookkeeping Audit Trail</h2><p class="muted">Journal and journal-line changes are recorded automatically. Audit entries cannot be edited or deleted through the application.</p><div id="auditRecords"></div></section>
 <section class="card"><h2>Financial reporting status</h2><p class="message">The opening entries remain drafts until reviewed. The Trial Balance, Profit &amp; Loss, Balance Sheet and Bank Cash Movement reports use posted journal entries only.</p></section>
 </div>
 </main>
@@ -38,11 +38,11 @@ const money=v=>"₦"+Number(v||0).toLocaleString("en-NG",{minimumFractionDigits:
 function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
 function showMessage(message,kind){$("accessStatus").textContent=message;$("accessStatus").className="message "+(kind||"");}
 function renderTable(root,heads,rows,empty){root.replaceChildren();if(!rows.length){root.append(el("p","muted",empty));return;}const wrap=el("div","tablewrap"),t=el("table"),thead=el("thead"),hr=el("tr");heads.forEach(h=>hr.append(el("th","",h)));thead.append(hr);t.append(thead);const body=el("tbody");rows.forEach(row=>{const tr=el("tr");row.forEach(value=>{const td=el("td","");if(value instanceof Node)td.append(value);else td.textContent=value??"—";tr.append(td);});body.append(tr);});t.append(body);wrap.append(t);root.append(wrap);}
-let activeUser=null,activeRole=null,canPrepare=false,accountsCache=[],periodsCache=[],journalsCache=[],linesCache=[],pendingAction=null;
+let activeUser=null,activeRole=null,canPrepare=false,canReadReports=false,canManageDocuments=false,accountsCache=[],periodsCache=[],journalsCache=[],linesCache=[],pendingAction=null;
 async function load(){
  $("refresh").disabled=true;showMessage("Loading company bookkeeping records…");
  try{
-  const [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult]=await Promise.all([
+  const [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult,auditResult]=await Promise.all([
    db.from("ft_bookkeeping_accounts").select("id,code,name,account_type,is_active").order("code"),
    db.from("ft_bookkeeping_periods").select("id,period_name,start_date,end_date,status").order("start_date",{ascending:false}),
    db.from("ft_bookkeeping_journals").select("id,entry_number,entry_date,description,source_reference,status,created_at").order("entry_date",{ascending:false}),
@@ -50,8 +50,8 @@ async function load(){
    db.from("ft_bookkeeping_expenses").select("expense_date,payee,description,amount,status,payment_method").order("expense_date",{ascending:false}),
    db.from("ft_bookkeeping_shareholder_loans").select("lender_name,principal_amount,interest_rate,amount_repaid,repayment_terms,status,agreement_date").order("created_at",{ascending:false})
   ]);
-  for(const result of [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult])if(result.error)throw result.error;
-  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[];
+  for(const result of [accountResult,periodResult,journalResult,lineResult,expenseResult,loanResult,auditResult])if(result.error)throw result.error;
+  const accounts=accountResult.data||[],periods=periodResult.data||[],journals=journalResult.data||[],lines=lineResult.data||[],expenses=expenseResult.data||[],loans=loanResult.data||[],audit=auditResult.data||[];
   accountsCache=accounts;periodsCache=periods;journalsCache=journals;linesCache=lines;
   const active=accounts.filter(a=>a.is_active);
   renderTable($("accounts"),["Code","Account","Type","Status"],active.map(a=>[a.code,a.name,a.account_type,"Active"]),"No active accounts.");
@@ -64,7 +64,7 @@ async function load(){
   const journalRows=journals.map(j=>{const detail=el("div","");detail.append(el("strong","",j.description));detail.append(el("div","muted",j.source_reference||"No source reference"));const journalLines=lines.filter(line=>line.journal_id===j.id);const list=el("ul","lineitems");let debit=0,credit=0;journalLines.forEach(line=>{debit+=Number(line.debit||0);credit+=Number(line.credit||0);list.append(el("li","",accountNames.get(line.account_id)+" · Dr "+money(line.debit)+" · Cr "+money(line.credit)+(line.line_description?" · "+line.line_description:"")));});detail.append(list);return [j.entry_number||"—",j.entry_date,detail,money(debit),money(credit),el("span","tag",j.status.toUpperCase())];});
   renderTable($("journals"),["Entry No.","Date","Description / Account Lines","Total Debits","Total Credits","Status"],journalRows,"No journal entries.");
   renderTable($("expenses"),["Date","Payee","Description","Amount","Payment Method","Status"],expenses.map(e=>[e.expense_date,e.payee,e.description,money(e.amount),e.payment_method,e.status.toUpperCase()]),"No expense records.");
-  renderTable($("loans"),["Lender","Principal","Interest","Repaid","Outstanding","Repayment Terms","Status"],loans.map(l=>[l.lender_name,money(l.principal_amount),Number(l.interest_rate).toFixed(2)+"%",money(l.amount_repaid),money(Number(l.principal_amount)-Number(l.amount_repaid)),l.repayment_terms,l.status.toUpperCase()]),"No shareholder loans recorded.");
+  renderTable($("loans"),["Lender","Principal","Interest","Repaid","Outstanding","Repayment Terms","Status"],loans.map(l=>[l.lender_name,money(l.principal_amount),Number(l.interest_rate).toFixed(2)+"%",money(l.amount_repaid),money(Number(l.principal_amount)-Number(l.amount_repaid)),l.repayment_terms,l.status.toUpperCase()]),"No shareholder loans recorded.");\n  renderTable($("auditRecords"),["Time","Table","Record","Action","Actor","Change Detail"],audit.map(a=>[new Date(a.created_at).toLocaleString(),a.table_name,a.record_id,a.action,a.actor_id||"System",JSON.stringify(a.details)]),"No audit events recorded yet.");
   renderApprovalQueue();showMessage("Bookkeeping records loaded. Only approved and posted journals affect official ledger balances.","success");
  }catch(error){console.error(error);showMessage(error.message||"Unable to load bookkeeping records.","error");}
  finally{$("refresh").disabled=false;}
