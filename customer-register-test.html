@@ -63,6 +63,7 @@ a{color:#075985}
       required autocomplete="new-password"
       placeholder="At least 12 characters">
     <p class="small-note">Use at least 12 characters (maximum 72 UTF-8 bytes). Spaces and passphrases are allowed.</p>
+    <p id="passwordFeedback" role="status" aria-live="polite" class="small-note" style="display:none;color:#991b1b"></p>
 
     <button id="registerButton" type="submit">
       Create Customer Account
@@ -96,6 +97,23 @@ a{color:#075985}
   const message = document.getElementById("message");
   const button = document.getElementById("registerButton");
   const nextStep = document.getElementById("nextStep");
+  const passwordInput = document.getElementById("password");
+  const passwordFeedback = document.getElementById("passwordFeedback");
+  function validateCustomerPassword() {
+    const value = passwordInput.value;
+    const characters = Array.from(value).length;
+    const bytes = new TextEncoder().encode(value).length;
+    let error = "";
+    if (!value.trim()) error = "Your password cannot contain only spaces.";
+    else if (characters < 12) error = "Use at least 12 characters. A memorable passphrase is a good choice.";
+    else if (bytes > 72) error = "Your password must not exceed 72 UTF-8 bytes.";
+    passwordInput.setCustomValidity(error);
+    passwordFeedback.textContent = error || (value ? "Password length looks good. Avoid reusing a password from another service." : "");
+    passwordFeedback.style.display = value ? "block" : "none";
+    passwordFeedback.style.color = error ? "#991b1b" : "#166534";
+    return !error;
+  }
+  passwordInput.addEventListener("input", validateCustomerPassword);
   const loginLink = document.getElementById("loginLink");
 
   function getSafeReturnPath() {
@@ -164,7 +182,12 @@ a{color:#075985}
     const fullName = document.getElementById("fullName").value.trim();
     const phone = document.getElementById("phone").value.trim();
     const email = document.getElementById("email").value.trim().toLowerCase();
-    const password = document.getElementById("password").value;
+    const password = passwordInput.value;
+
+    if (!validateCustomerPassword()) {
+      passwordInput.reportValidity();
+      return;
+    }
 
     if (!fullName || !phone || !email) {
       showMessage("Please complete all required fields.", "error");
