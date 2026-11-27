@@ -197,7 +197,7 @@ create table public.ft_bookkeeping_reconciliations (
   period_end date not null,
   statement_closing_balance numeric(18,2) not null,
   ledger_closing_balance numeric(18,2) not null,
-  difference numeric(18,2) default (statement_closing_balance - ledger_closing_balance),
+  difference numeric(18,2) generated always as (statement_closing_balance - ledger_closing_balance) stored,
   status text not null default 'draft' check (status in ('draft','submitted','approved')),
   prepared_by uuid references auth.users(id),
   approved_by uuid references auth.users(id),
